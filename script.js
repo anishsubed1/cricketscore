@@ -725,6 +725,8 @@ class CricketScoreCounter {
     const currentInning = {
       runs: this.state.runs,
       wickets: this.state.wickets,
+      battingTeam: this.state.battingTeam,
+      bowlingTeam: this.state.bowlingTeam,
       over: {
         overNumber: this.state.overs,
         ballsBowled: this.state.balls,
@@ -741,6 +743,8 @@ class CricketScoreCounter {
           overNumber: this.state.inningsHistory[0].overs,
           ballsBowled: 0,
         },
+        battingTeam: this.state.bowlingTeam,
+        bowlingTeam: this.state.battingTeam
       };
       secondInning = currentInning;
     }
