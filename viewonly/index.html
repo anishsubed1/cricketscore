@@ -1,166 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cricket Scoreboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f0f2f5;
-            margin: 0;
-        }
-        .scoreboard {
-            width: 80%;
-            max-width: 600px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-            border: 1px solid #ddd;
-        }
-        .header {
-            background-color: #007bff;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            font-size: 1.5em;
-        }
-        .innings {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
-        }
-        .innings:last-child {
-            border-bottom: none;
-        }
-        .team-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .team-name {
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-        .score {
-            font-size: 2em;
-            font-weight: bold;
-        }
-        .overs {
-            font-size: 1em;
-            color: #555;
-        }
-        .status {
-            text-align: center;
-            padding: 15px;
-            background-color: #f8f9fa;
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-        .error {
-            color: red;
-            text-align: center;
-            padding: 20px;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="scoreboard">
-        <div class="header">
-            Live Cricket Score
-        </div>
-        <div id="scoreboard-body">
-            </div>
-        <div class="status" id="status">
-            Loading score...
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const scoreboardBody = document.getElementById('scoreboard-body');
-            const statusDiv = document.getElementById('status');
-            let matchId;
-
-            function getMatchIdFromUrl() {
-                const params = new URLSearchParams(window.location.search);
-                return params.get('matchId');
-            }
-
-            async function fetchScore() {
-                if (!matchId) {
-                    scoreboardBody.innerHTML = `<div class="error">Match ID not found in URL. Please add ?matchId=&lt;your_match_id&gt; to the URL.</div>`;
-                    statusDiv.textContent = 'Error';
-                    return;
-                }
-
-                const apiUrl = `https://rhinos.ashishsubedi.com/score/${matchId}`;
-
-                try {
-                    const response = await fetch(apiUrl);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    updateScoreboard(data);
-                    statusDiv.textContent = `Total Overs: ${data.totalOvers}`;
-                } catch (error) {
-                    console.error("Failed to fetch score:", error);
-                    scoreboardBody.innerHTML = `<div class="error">Could not load match data. Please check the match ID and try again.</div>`;
-                    statusDiv.textContent = 'Failed to load';
-                }
-            }
-
-            function updateScoreboard(data) {
-                const { firstInning, secondInning } = data;
-                let html = '';
-
-                if (firstInning) {
-                    html += `
-                        <div class="innings">
-                            <div class="team-info">
-                                <span class="team-name">Innings 1: ${firstInning.battingTeam}</span>
-                                <span class="score">${firstInning.runs} / ${firstInning.wickets}</span>
-                            </div>
-                            <div class="overs">
-                                Overs: ${firstInning.over.overNumber - 1}.${firstInning.over.ballsBowled}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                if (secondInning && secondInning.runs !== null) {
-                     html += `
-                        <div class="innings">
-                            <div class="team-info">
-                                <span class="team-name">Innings 2: ${secondInning.battingTeam}</span>
-                                <span class="score">${secondInning.runs} / ${secondInning.wickets}</span>
-                            </div>
-                            <div class="overs">
-                                Overs: ${secondInning.over.overNumber - 1}.${secondInning.over.ballsBowled}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                scoreboardBody.innerHTML = html;
-            }
-
-            function init() {
-                matchId = getMatchIdFromUrl();
-                fetchScore(); // Initial fetch
-                setInterval(fetchScore, 5000); // Refresh every 5 seconds
-            }
-
-            init();
-        });
-    </script>
-
-</body>
-</html>
+{
+    "totalOvers":2,
+    "firstInning":{
+        "matchId":null,
+        "runs":3,
+        "wickets":0,
+        "over":{"overNumber":0,"ballsBowled":0},
+        "battingTeam":"A",
+        "bowlingTeam":"B",
+        "id":null,
+        "firstInning":false
+    },
+    "secondInning":{
+        "matchId":null,
+        "runs":1,
+        "wickets":0,
+        "over":{"overNumber":0,"ballsBowled":1},
+        "battingTeam":"B",
+        "bowlingTeam":"A",
+        "id":null,
+        "firstInning":false
+    }
+}
