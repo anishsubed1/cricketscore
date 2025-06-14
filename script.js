@@ -53,10 +53,18 @@ class CricketScoreCounter {
       tossWinnerInput: document.getElementById("toss-winner"),
       tossChoiceInput: document.getElementById("toss-choice"),
       gameId: document.getElementById("gameId"),
+      copyBtn: document.getElementById("link-copy-btn")
     };
   }
 
   initEventListeners() {
+
+    this.elements.copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(
+        `https://rhinosclient.ashishsubedi.com/viewonly/?gameId=${this.state.matchId}`
+      );
+    });
+
     this.elements.scorepadButtons.forEach((btn) => {
       btn.addEventListener("click", () => this.handleScorepadButton(btn));
     });
