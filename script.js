@@ -622,7 +622,7 @@ class CricketScoreCounter {
     this.elements.gameId.textContent = this.state.matchId;
 
     // Clear and update balls container with current over only
-    this.elements.this.elements.ballsContainer.innerHTML = "";
+    this.elements.ballsContainer.innerHTML = "";
     const currentOverBalls = this.getCurrentOverBalls();
     currentOverBalls.forEach((ball) => {
       this.elements.ballsContainer.innerHTML += this.getBallHTML(ball);
