@@ -53,12 +53,11 @@ class CricketScoreCounter {
       tossWinnerInput: document.getElementById("toss-winner"),
       tossChoiceInput: document.getElementById("toss-choice"),
       gameId: document.getElementById("gameId"),
-      copyBtn: document.getElementById("link-copy-btn")
+      copyBtn: document.getElementById("link-copy-btn"),
     };
   }
 
   initEventListeners() {
-
     this.elements.copyBtn.addEventListener("click", () => {
       navigator.clipboard.writeText(
         `https://rhinosclient.ashishsubedi.com/viewonly/?gameId=${this.state.matchId}`
@@ -627,7 +626,6 @@ class CricketScoreCounter {
       this.state.overs + this.state.balls / 6
     );
     this.elements.totalOvers.textContent = this.state.totalOvers;
-    this.elements.gameId.textContent = this.state.matchId;
 
     // Clear and update balls container with current over only
     this.elements.ballsContainer.innerHTML = "";
@@ -749,6 +747,7 @@ class CricketScoreCounter {
     return {
       firstInning,
       secondInning,
+      totalOvers: this.state.totalOvers,
     };
   }
   saveInServer() {
