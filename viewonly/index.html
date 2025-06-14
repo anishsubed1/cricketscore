@@ -14,7 +14,7 @@
         }
         
         .container {
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
             background-color: white;
             border-radius: 10px;
@@ -25,47 +25,51 @@
         h1 {
             text-align: center;
             color: #2c3e50;
-            margin-bottom: 30px;
-        }
-        
-        .innings {
-            margin-bottom: 30px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
-            background-color: #f9f9f9;
-        }
-        
-        .innings-title {
-            font-size: 1.5em;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #2c3e50;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        
-        .score-display {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 10px;
         }
         
-        .runs-wickets {
-            font-size: 2em;
+        .match-title {
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
             font-weight: bold;
-            color: #e74c3c;
         }
         
-        .overs {
-            font-size: 1.2em;
-            color: #3498db;
+        .innings {
+            margin-bottom: 25px;
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .innings-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .score-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #e74c3c;
         }
         
         .team-info {
             font-style: italic;
             color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .over-info {
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+        
+        .target-info {
+            color: #27ae60;
+            font-weight: bold;
+            margin-top: 10px;
         }
         
         .last-updated {
@@ -89,14 +93,13 @@
             font-weight: bold;
         }
         
-        @media (max-width: 600px) {
-            .score-display {
-                flex-direction: column;
-                align-items: flex-start;
+        @media (max-width: 500px) {
+            .container {
+                padding: 15px;
             }
             
-            .overs {
-                margin-top: 5px;
+            .score-display {
+                font-size: 1.3em;
             }
         }
     </style>
@@ -104,35 +107,25 @@
 <body>
     <div class="container">
         <h1>Cricket Scoreboard</h1>
+        <div id="matchTitle" class="match-title"></div>
         <div id="errorDisplay" class="error-message"></div>
         
         <div id="firstInning" class="innings">
             <div class="innings-title">First Inning</div>
-            <div class="score-display">
-                <div class="runs-wickets">
-                    <span id="firstRuns">0</span>/<span id="firstWickets">0</span>
-                </div>
-                <div class="overs">
-                    Overs: <span id="firstOvers">0.0</span>
-                </div>
-            </div>
-            <div class="team-info">
-                Batting: <span id="firstBattingTeam">-</span> | Bowling: <span id="firstBowlingTeam">-</span>
+            <div id="firstInningContent">
+                <div class="score-display"><span id="firstRuns">0</span>/<span id="firstWickets">0</span></div>
+                <div class="team-info">Batting: <span id="firstBattingTeam">-</span> | Bowling: <span id="firstBowlingTeam">-</span></div>
+                <div class="over-info">Overs: <span id="firstOvers">0.0</span>/<span id="totalOvers">0</span></div>
             </div>
         </div>
         
         <div id="secondInning" class="innings">
             <div class="innings-title">Second Inning</div>
-            <div class="score-display">
-                <div class="runs-wickets">
-                    <span id="secondRuns">0</span>/<span id="secondWickets">0</span>
-                </div>
-                <div class="overs">
-                    Overs: <span id="secondOvers">0.0</span>
-                </div>
-            </div>
-            <div class="team-info">
-                Batting: <span id="secondBattingTeam">-</span> | Bowling: <span id="secondBowlingTeam">-</span>
+            <div id="secondInningContent">
+                <div class="score-display"><span id="secondRuns">0</span>/<span id="secondWickets">0</span></div>
+                <div class="team-info">Batting: <span id="secondBattingTeam">-</span> | Bowling: <span id="secondBowlingTeam">-</span></div>
+                <div class="over-info">Overs: <span id="secondOvers">0.0</span>/<span id="totalOvers2">0</span></div>
+                <div id="targetInfo" class="target-info"></div>
             </div>
         </div>
         
@@ -168,6 +161,22 @@
             document.getElementById('errorDisplay').style.display = 'none';
         }
 
+        // Function to calculate target information
+        function calculateTargetInfo(firstInningRuns, secondInning) {
+            if (!secondInning || firstInningRuns === undefined) return '';
+            
+            const runsNeeded = firstInningRuns - secondInning.runs + 1;
+            const ballsRemaining = (secondInning.over.totalOvers * 6) - 
+                                 (secondInning.over.overNumber * 6 + secondInning.over.ballsBowled);
+            
+            if (runsNeeded <= 0) {
+                return "Match completed";
+            }
+            
+            const runRateRequired = (runsNeeded / ballsRemaining * 6).toFixed(2);
+            return `Target: ${firstInningRuns} | Needs ${runsNeeded} runs in ${ballsRemaining} balls | RR: ${runRateRequired}`;
+        }
+
         // Function to fetch data from server
         async function fetchScoreData() {
             const gameId = getUrlParameter('gameId');
@@ -198,27 +207,43 @@
         
         // Function to update the scoreboard UI
         function updateScoreboard(data) {
+            const gameData = data[Object.keys(data)[0]]; // Get the first (and only) game object
+            
+            // Set match title (A vs B)
+            document.getElementById('matchTitle').textContent = 
+                `${gameData.firstInning.battingTeam} vs ${gameData.firstInning.bowlingTeam}`;
+            
             // First Inning
-            const firstInning = data.firstInning;
+            const firstInning = gameData.firstInning;
             document.getElementById('firstRuns').textContent = firstInning.runs;
             document.getElementById('firstWickets').textContent = firstInning.wickets;
             document.getElementById('firstOvers').textContent = 
                 `${firstInning.over.overNumber}.${firstInning.over.ballsBowled}`;
-            document.getElementById('firstBattingTeam').textContent = 
-                firstInning.battingTeam || '-';
-            document.getElementById('firstBowlingTeam').textContent = 
-                firstInning.bowlingTeam || '-';
+            document.getElementById('totalOvers').textContent = gameData.totalOvers;
+            document.getElementById('firstBattingTeam').textContent = firstInning.battingTeam || '-';
+            document.getElementById('firstBowlingTeam').textContent = firstInning.bowlingTeam || '-';
             
-            // Second Inning
-            const secondInning = data.secondInning;
-            document.getElementById('secondRuns').textContent = secondInning.runs;
-            document.getElementById('secondWickets').textContent = secondInning.wickets;
-            document.getElementById('secondOvers').textContent = 
-                `${secondInning.over.overNumber}.${secondInning.over.ballsBowled}`;
-            document.getElementById('secondBattingTeam').textContent = 
-                secondInning.battingTeam || '-';
-            document.getElementById('secondBowlingTeam').textContent = 
-                secondInning.bowlingTeam || '-';
+            // Second Inning (only show if exists)
+            const secondInning = gameData.secondInning;
+            const secondInningElement = document.getElementById('secondInning');
+            const secondInningContent = document.getElementById('secondInningContent');
+            
+            if (secondInning && secondInning.runs !== undefined) {
+                secondInningElement.style.display = 'block';
+                document.getElementById('secondRuns').textContent = secondInning.runs;
+                document.getElementById('secondWickets').textContent = secondInning.wickets;
+                document.getElementById('secondOvers').textContent = 
+                    `${secondInning.over.overNumber}.${secondInning.over.ballsBowled}`;
+                document.getElementById('totalOvers2').textContent = gameData.totalOvers;
+                document.getElementById('secondBattingTeam').textContent = secondInning.battingTeam || '-';
+                document.getElementById('secondBowlingTeam').textContent = secondInning.bowlingTeam || '-';
+                
+                // Calculate and display target information
+                document.getElementById('targetInfo').textContent = 
+                    calculateTargetInfo(firstInning.runs, secondInning);
+            } else {
+                secondInningElement.style.display = 'none';
+            }
         }
         
         // Fetch data immediately when page loads
