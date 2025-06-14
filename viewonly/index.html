@@ -6,267 +6,161 @@
     <title>Cricket Scoreboard</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f5f5f5;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
             margin: 0;
-            padding: 20px;
-            color: #333;
         }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        
-        .teams {
-            text-align: center;
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #e74c3c;
-        }
-        
-        .innings {
-            margin-bottom: 25px;
-            border: 1px solid #e0e0e0;
+        .scoreboard {
+            width: 80%;
+            max-width: 600px;
+            background: white;
             border-radius: 8px;
-            padding: 15px;
-            background-color: #f9f9f9;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid #ddd;
         }
-        
-        .innings-title {
-            font-size: 1.3em;
-            font-weight: bold;
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 1.5em;
+        }
+        .innings {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .innings:last-child {
+            border-bottom: none;
+        }
+        .team-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 10px;
-            color: #2c3e50;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #e0e0e0;
         }
-        
-        .score-display {
-            margin-bottom: 8px;
-        }
-        
-        .runs-wickets {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #e74c3c;
-            margin-bottom: 5px;
-        }
-        
         .team-name {
             font-weight: bold;
-            margin-bottom: 5px;
+            font-size: 1.2em;
         }
-        
-        .overs, .target-info {
-            font-size: 1.1em;
-            color: #3498db;
-            margin-bottom: 5px;
-        }
-        
-        .run-rate {
-            font-size: 1em;
-            color: #27ae60;
-        }
-        
-        .divider {
-            border-top: 1px solid #e0e0e0;
-            margin: 15px 0;
-        }
-        
-        .last-updated {
-            text-align: right;
-            font-size: 0.8em;
-            color: #95a5a6;
-            margin-top: 20px;
-        }
-        
-        .refresh-info {
-            text-align: center;
-            margin-top: 20px;
-            color: #95a5a6;
-            font-size: 0.9em;
-        }
-        
-        .error-message {
-            color: #e74c3c;
-            text-align: center;
-            padding: 15px;
+        .score {
+            font-size: 2em;
             font-weight: bold;
         }
-        
-        .not-started {
-            color: #7f8c8d;
-            font-style: italic;
+        .overs {
+            font-size: 1em;
+            color: #555;
         }
-        
-        @media (max-width: 600px) {
-            .teams {
-                font-size: 1.1em;
-            }
-            
-            .runs-wickets {
-                font-size: 1.5em;
-            }
+        .status {
+            text-align: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            padding: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Cricket Scoreboard</h1>
-        <div id="teamsDisplay" class="teams">- vs -</div>
-        <div id="errorDisplay" class="error-message"></div>
-        
-        <div id="firstInning" class="innings">
-            <div class="innings-title">First Inning</div>
-            <div class="team-name" id="firstBattingTeamName">-</div>
-            <div class="score-display">
-                <div class="runs-wickets" id="firstScore">0/0</div>
-                <div class="overs">
-                    Overs: <span id="firstOvers">0.0</span>/<span id="firstTotalOvers">0</span>
-                </div>
-                <div class="run-rate" id="firstRunRate"></div>
+
+    <div class="scoreboard">
+        <div class="header">
+            Live Cricket Score
+        </div>
+        <div id="scoreboard-body">
             </div>
-        </div>
-        
-        <div id="secondInning" class="innings">
-            <div class="innings-title">Second Inning</div>
-            <div id="secondInningContent">
-                <div class="not-started">Yet to bat</div>
-            </div>
-        </div>
-        
-        <div class="last-updated">
-            Last updated: <span id="lastUpdated">-</span>
-        </div>
-        
-        <div class="refresh-info">
-            Scoreboard refreshes every 5 seconds...
+        <div class="status" id="status">
+            Loading score...
         </div>
     </div>
 
     <script>
-        // Function to get URL parameters
-        function getUrlParameter(name) {
-            name = name.replace(/[\[\]]/g, '\\$&');
-            const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
-            const results = regex.exec(window.location.href);
-            if (!results) return null;
-            if (!results[2]) return '';
-            return decodeURIComponent(results[2].replace(/\+/g, ' '));
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const scoreboardBody = document.getElementById('scoreboard-body');
+            const statusDiv = document.getElementById('status');
+            let matchId;
 
-        // Function to show error message
-        function showError(message) {
-            const errorElement = document.getElementById('errorDisplay');
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-        }
-
-        // Function to hide error message
-        function hideError() {
-            document.getElementById('errorDisplay').style.display = 'none';
-        }
-
-        // Function to calculate required run rate
-        function calculateRequiredRunRate(target, ballsRemaining) {
-            if (ballsRemaining <= 0) return 0;
-            return (target / ballsRemaining * 6).toFixed(2);
-        }
-
-        // Function to fetch data from server
-        async function fetchScoreData() {
-            const gameId = getUrlParameter('gameId');
-            
-            if (!gameId) {
-                showError('Error: No gameId parameter found in URL');
-                return;
+            function getMatchIdFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                return params.get('matchId');
             }
-            
-            try {
-                const response = await fetch(`https://rhinos.ashishsubedi.com/score/${gameId}`);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+
+            async function fetchScore() {
+                if (!matchId) {
+                    scoreboardBody.innerHTML = `<div class="error">Match ID not found in URL. Please add ?matchId=&lt;your_match_id&gt; to the URL.</div>`;
+                    statusDiv.textContent = 'Error';
+                    return;
                 }
-                const data = await response.json();
-                updateScoreboard(data);
-                hideError();
-                
-                // Update last updated time
-                const now = new Date();
-                document.getElementById('lastUpdated').textContent = now.toLocaleTimeString();
-            } catch (error) {
-                console.error('Error fetching score data:', error);
-                showError('Error fetching score data. Please try again.');
-                document.getElementById('lastUpdated').textContent = 'Error updating score';
+
+                const apiUrl = `https://rhinos.ashishsubedi.com/score/${matchId}`;
+
+                try {
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    updateScoreboard(data);
+                    statusDiv.textContent = `Total Overs: ${data.totalOvers}`;
+                } catch (error) {
+                    console.error("Failed to fetch score:", error);
+                    scoreboardBody.innerHTML = `<div class="error">Could not load match data. Please check the match ID and try again.</div>`;
+                    statusDiv.textContent = 'Failed to load';
+                }
             }
-        }
-        
-        // Function to update the scoreboard UI
-        function updateScoreboard(data) {
-            const matchData = data[Object.keys(data)[0]]; // Get the first (and only) match
-            
-            // Update teams display
-            const firstBatting = matchData.firstInning?.battingTeam || '-';
-            const firstBowling = matchData.firstInning?.bowlingTeam || '-';
-            document.getElementById('teamsDisplay').textContent = `${firstBatting} vs ${firstBowling}`;
-            
-            // First Inning
-            if (matchData.firstInning) {
-                const firstInning = matchData.firstInning;
-                document.getElementById('firstBattingTeamName').textContent = firstInning.battingTeam;
-                document.getElementById('firstScore').textContent = 
-                    `${firstInning.runs}/${firstInning.wickets}`;
-                document.getElementById('firstOvers').textContent = 
-                    `${firstInning.over.overNumber}.${firstInning.over.ballsBowled}`;
-                document.getElementById('firstTotalOvers').textContent = matchData.totalOvers;
-                
-                // Calculate run rate
-                const ballsBowled = firstInning.over.overNumber * 6 + firstInning.over.ballsBowled;
-                const runRate = (ballsBowled > 0) ? (firstInning.runs / ballsBowled * 6).toFixed(2) : 0;
-                document.getElementById('firstRunRate').textContent = `Run Rate: ${runRate}`;
+
+            function updateScoreboard(data) {
+                const { firstInning, secondInning } = data;
+                let html = '';
+
+                if (firstInning) {
+                    html += `
+                        <div class="innings">
+                            <div class="team-info">
+                                <span class="team-name">Innings 1: ${firstInning.battingTeam}</span>
+                                <span class="score">${firstInning.runs} / ${firstInning.wickets}</span>
+                            </div>
+                            <div class="overs">
+                                Overs: ${firstInning.over.overNumber - 1}.${firstInning.over.ballsBowled}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (secondInning && secondInning.runs !== null) {
+                     html += `
+                        <div class="innings">
+                            <div class="team-info">
+                                <span class="team-name">Innings 2: ${secondInning.battingTeam}</span>
+                                <span class="score">${secondInning.runs} / ${secondInning.wickets}</span>
+                            </div>
+                            <div class="overs">
+                                Overs: ${secondInning.over.overNumber - 1}.${secondInning.over.ballsBowled}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                scoreboardBody.innerHTML = html;
             }
-            
-            // Second Inning
-            const secondInningContent = document.getElementById('secondInningContent');
-            if (matchData.secondInning) {
-                const secondInning = matchData.secondInning;
-                const target = matchData.firstInning.runs + 1;
-                const runsNeeded = target - secondInning.runs;
-                const ballsBowled = secondInning.over.overNumber * 6 + secondInning.over.ballsBowled;
-                const ballsRemaining = matchData.totalOvers * 6 - ballsBowled;
-                const requiredRunRate = calculateRequiredRunRate(runsNeeded, ballsRemaining);
-                
-                secondInningContent.innerHTML = `
-                    <div class="team-name">${secondInning.battingTeam}</div>
-                    <div class="score-display">
-                        <div class="runs-wickets">${secondInning.runs}/${secondInning.wickets}</div>
-                        <div class="overs">Overs: ${secondInning.over.overNumber}.${secondInning.over.ballsBowled}/${matchData.totalOvers}</div>
-                        <div class="target-info">Target: ${target} | Need ${runsNeeded} runs in ${ballsRemaining} balls</div>
-                        <div class="run-rate">Required RR: ${requiredRunRate}</div>
-                    </div>
-                `;
-            } else {
-                secondInningContent.innerHTML = '<div class="not-started">Yet to bat</div>';
+
+            function init() {
+                matchId = getMatchIdFromUrl();
+                fetchScore(); // Initial fetch
+                setInterval(fetchScore, 5000); // Refresh every 5 seconds
             }
-        }
-        
-        // Fetch data immediately when page loads
-        fetchScoreData();
-        
-        // Then set up interval to fetch every 5 seconds
-        setInterval(fetchScoreData, 5000);
+
+            init();
+        });
     </script>
+
 </body>
 </html>
