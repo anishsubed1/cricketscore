@@ -585,7 +585,7 @@ class CricketScoreCounter {
 
   startMatch() {
     this.state.matchId = Math.floor(Math.random() * 100000) + 1;
-    this.elements.linkUrl.textContent = `https://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`;
+    this.elements.linkUrl.textContent = `http://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`;
     this.state.team1 = this.elements.team1Input.value || "Team 1";
     this.state.team2 = this.elements.team2Input.value || "Team 2";
     this.state.totalOvers = parseInt(this.elements.totalOversInput.value) || 20;
