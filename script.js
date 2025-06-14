@@ -52,7 +52,6 @@ class CricketScoreCounter {
       totalOversInput: document.getElementById("total-overs-input"),
       tossWinnerInput: document.getElementById("toss-winner"),
       tossChoiceInput: document.getElementById("toss-choice"),
-      gameId: document.getElementById("gameId"),
       copyBtn: document.getElementById("link-copy-btn"),
     };
   }
@@ -60,7 +59,7 @@ class CricketScoreCounter {
   initEventListeners() {
     this.elements.copyBtn.addEventListener("click", () => {
       navigator.clipboard.writeText(
-        `https://rhinosclient.ashishsubedi.com/viewonly/?gameId=${this.state.matchId}`
+        `https://rhinosclient.ashishsubedi.com/viewonly/?matchId=${this.state.matchId}`
       );
     });
 
@@ -405,7 +404,7 @@ class CricketScoreCounter {
           runsShort !== 1 ? "s" : ""
         }`;
       }
-
+      this.saveInServer();
       alert(`Match completed! ${result}`);
       this.resetMatch();
       return;
