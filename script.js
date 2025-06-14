@@ -59,7 +59,7 @@ class CricketScoreCounter {
   initEventListeners() {
     this.elements.copyBtn.addEventListener("click", () => {
       navigator.clipboard.writeText(
-        `https://rhinosclient.ashishsubedi.com/viewonly/?matchId=${this.state.matchId}`
+        `https://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`
       );
     });
 
