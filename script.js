@@ -52,6 +52,7 @@ class CricketScoreCounter {
       totalOversInput: document.getElementById("total-overs-input"),
       tossWinnerInput: document.getElementById("toss-winner"),
       tossChoiceInput: document.getElementById("toss-choice"),
+      gameId: document.getElementById("gameId"),
     };
   }
 
@@ -618,9 +619,10 @@ class CricketScoreCounter {
       this.state.overs + this.state.balls / 6
     );
     this.elements.totalOvers.textContent = this.state.totalOvers;
+    this.elements.gameId.textContent = this.state.matchId;
 
     // Clear and update balls container with current over only
-    this.elements.ballsContainer.innerHTML = "";
+    this.elements.this.elements.ballsContainer.innerHTML = "";
     const currentOverBalls = this.getCurrentOverBalls();
     currentOverBalls.forEach((ball) => {
       this.elements.ballsContainer.innerHTML += this.getBallHTML(ball);
@@ -710,29 +712,57 @@ class CricketScoreCounter {
     this.elements.modal.style.display = "none";
   }
 
-  saveInServer(){
-    fetch(`https://rhinos.ashishsubedi.com/score/${this.state.matchId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+  getScore() {
+    let firstInning = {};
+    let secondInning = {};
+
+    const currentInning = {
+      runs: this.state.runs,
+      wickets: this.state.wickets,
+      over: {
+        overNumber: this.state.overs,
+        ballsBowled: this.state.balls,
       },
-      body: {
-        "runs": 10,
-        "wickets": 2
-      }
+    };
+
+    if (this.state.currentInnings == 1) {
+      firstInning = currentInning;
+      secondInning = null;
+    } else {
+      firstInning = {
+        ...this.state.inningsHistory[0],
+        over: {
+          overNumber: this.state.inningsHistory[0].overs,
+          ballsBowled: 0,
+        },
+      };
+      secondInning = currentInning;
+    }
+    return {
+      firstInning,
+      secondInning,
+    };
+  }
+  saveInServer() {
+    fetch(`https://rhinos.ashishsubedi.com/score/${this.state.matchId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(this.getScore()),
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(responseData => {
-      console.log('Response:', responseData);
-    })
-    .catch(error => {
-      console.error('Error:', error);
-    });
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((responseData) => {
+        console.log("Response:", responseData);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
   }
 
   saveToLocalStorage() {
