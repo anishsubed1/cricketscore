@@ -32,8 +32,20 @@
             text-align: center;
             font-size: 1.3em;
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             color: #e74c3c;
+        }
+        
+        .winner {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #27ae60;
+            color: white;
+            border-radius: 5px;
+            display: none;
         }
         
         .innings {
@@ -119,6 +131,10 @@
             .runs-wickets {
                 font-size: 1.5em;
             }
+            
+            .winner {
+                font-size: 1.2em;
+            }
         }
     </style>
 </head>
@@ -126,6 +142,7 @@
     <div class="container">
         <h1>Cricket Scoreboard</h1>
         <div id="teamsDisplay" class="teams">- vs -</div>
+        <div id="winnerDisplay" class="winner"></div>
         <div id="errorDisplay" class="error-message"></div>
         
         <div id="firstInning" class="innings">
@@ -185,6 +202,43 @@
             return (target / ballsRemaining * 6).toFixed(2);
         }
 
+        // Function to calculate current run rate
+        function calculateCurrentRunRate(runs, balls) {
+            if (balls <= 0) return 0;
+            return (runs / balls * 6).toFixed(2);
+        }
+
+        // Function to determine if game is complete
+        function isGameComplete(matchData) {
+            if (!matchData.secondInning) return false;
+            
+            const secondInning = matchData.secondInning;
+            const target = matchData.firstInning.runs + 1;
+            const ballsBowled = secondInning.over.overNumber * 6 + secondInning.over.ballsBowled;
+            const totalBalls = matchData.totalOvers * 6;
+            
+            // Game is complete if:
+            // 1. Second inning has reached/passed target, or
+            // 2. All overs are completed
+            return (secondInning.runs >= target) || (ballsBowled >= totalBalls);
+        }
+
+        // Function to determine winner
+        function determineWinner(matchData) {
+            if (!isGameComplete(matchData)) return null;
+            
+            const firstInningRuns = matchData.firstInning.runs;
+            const secondInningRuns = matchData.secondInning.runs;
+            
+            if (secondInningRuns > firstInningRuns) {
+                return matchData.secondInning.battingTeam;
+            } else if (secondInningRuns < firstInningRuns) {
+                return matchData.firstInning.bowlingTeam;
+            } else {
+                return "Match Tied";
+            }
+        }
+
         // Function to fetch data from server
         async function fetchScoreData() {
             const gameId = getUrlParameter('gameId');
@@ -232,7 +286,7 @@
                 
                 // Calculate run rate
                 const ballsBowled = firstInning.over.overNumber * 6 + firstInning.over.ballsBowled;
-                const runRate = (ballsBowled > 0) ? (firstInning.runs / ballsBowled * 6).toFixed(2) : 0;
+                const runRate = calculateCurrentRunRate(firstInning.runs, ballsBowled);
                 document.getElementById('firstRunRate').textContent = `Run Rate: ${runRate}`;
             }
             
@@ -245,18 +299,30 @@
                 const ballsBowled = secondInning.over.overNumber * 6 + secondInning.over.ballsBowled;
                 const ballsRemaining = matchData.totalOvers * 6 - ballsBowled;
                 const requiredRunRate = calculateRequiredRunRate(runsNeeded, ballsRemaining);
+                const currentRunRate = calculateCurrentRunRate(secondInning.runs, ballsBowled);
                 
                 secondInningContent.innerHTML = `
                     <div class="team-name">${secondInning.battingTeam}</div>
                     <div class="score-display">
                         <div class="runs-wickets">${secondInning.runs}/${secondInning.wickets}</div>
                         <div class="overs">Overs: ${secondInning.over.overNumber}.${secondInning.over.ballsBowled}/${matchData.totalOvers}</div>
+                        <div class="run-rate">Current RR: ${currentRunRate}</div>
                         <div class="target-info">Target: ${target} | Need ${runsNeeded} runs in ${ballsRemaining} balls</div>
                         <div class="run-rate">Required RR: ${requiredRunRate}</div>
                     </div>
                 `;
             } else {
                 secondInningContent.innerHTML = '<div class="not-started">Yet to bat</div>';
+            }
+            
+            // Check for winner
+            const winner = determineWinner(matchData);
+            const winnerElement = document.getElementById('winnerDisplay');
+            if (winner) {
+                winnerElement.textContent = `Winner: ${winner}`;
+                winnerElement.style.display = 'block';
+            } else {
+                winnerElement.style.display = 'none';
             }
         }
         
