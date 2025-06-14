@@ -1,6 +1,7 @@
 class CricketScoreCounter {
   constructor() {
     this.state = {
+      matchId: Math.floor(Math.random() * 100000) + 1,
       team1: "Team A",
       team2: "Team B",
       totalOvers: 20,
@@ -575,6 +576,7 @@ class CricketScoreCounter {
   }
 
   startMatch() {
+    this.state.matchId = Math.floor(Math.random() * 100000) + 1;
     this.state.team1 = this.elements.team1Input.value || "Team 1";
     this.state.team2 = this.elements.team2Input.value || "Team 2";
     this.state.totalOvers = parseInt(this.elements.totalOversInput.value) || 20;
@@ -708,7 +710,33 @@ class CricketScoreCounter {
     this.elements.modal.style.display = "none";
   }
 
+  saveInServer(){
+    fetch(`https://rhinos.ashishsubedi.com/score/${this.state.matchId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: {
+        "runs": 10,
+        "wickets": 2
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(responseData => {
+      console.log('Response:', responseData);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+
   saveToLocalStorage() {
+    this.saveInServer();
     localStorage.setItem("cricketScoreData", JSON.stringify(this.state));
   }
 
