@@ -53,13 +53,14 @@ class CricketScoreCounter {
       tossWinnerInput: document.getElementById("toss-winner"),
       tossChoiceInput: document.getElementById("toss-choice"),
       copyBtn: document.getElementById("link-copy-btn"),
+      linkUrl: document.getElementById("link-url")
     };
   }
 
   initEventListeners() {
     this.elements.copyBtn.addEventListener("click", () => {
       navigator.clipboard.writeText(
-        `https://rhinosclient.ashishsubedi.com/viewonly/?matchId=${this.state.matchId}`
+        `https://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`
       );
     });
 
@@ -584,6 +585,7 @@ class CricketScoreCounter {
 
   startMatch() {
     this.state.matchId = Math.floor(Math.random() * 100000) + 1;
+    this.elements.linkUrl.textContent = this.state.battingTeam;
     this.state.team1 = this.elements.team1Input.value || "Team 1";
     this.state.team2 = this.elements.team2Input.value || "Team 2";
     this.state.totalOvers = parseInt(this.elements.totalOversInput.value) || 20;
