@@ -291,7 +291,7 @@ main {
 /* Responsive adjustments */
 @media (max-width: 480px) {
   .scorepad {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .big-text {
@@ -311,21 +311,11 @@ main {
     height: 36px;
     font-size: 0.9rem;
   }
-}
-
-@media (max-width: 400px) {
-  .scorepad {
-    grid-template-columns: repeat(2, 1fr);
-  }
 
   .btn {
     font-size: 0.9rem;
     padding: 0.5rem;
     min-height: 45px;
-  }
-
-  .big-text {
-    font-size: 2rem;
   }
 
   .run-rate-info {
@@ -337,3 +327,4 @@ main {
     padding: 1rem;
   }
 }
+
