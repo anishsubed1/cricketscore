@@ -59,6 +59,7 @@ class CricketScoreCounter {
 
   initEventListeners() {
     this.elements.copyBtn.addEventListener("click", () => {
+      this.elements.linkUrl.textContent = `http://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`;
       navigator.clipboard.writeText(
         `https://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`
       );
