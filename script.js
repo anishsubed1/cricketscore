@@ -759,6 +759,8 @@ class CricketScoreCounter {
 
   copyLink() {
     const url = `http://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`;
+    var linkElement = document.getElementById("dynamic-link");
+    linkElement.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
     navigator.clipboard.writeText(url).then(() => {
       this.elements.linkUrl.textContent = "Link Copied!";
       setTimeout(() => {
