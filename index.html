@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Simple cricket score counter for local matches"
+      content="A polished and feature-rich cricket score counter for local matches."
     />
-    <title>Cricket Score Counter</title>
+    <title>Cricket Score Counter Pro</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header id="teams-header">Team A vs Team B</header>
+
     <main>
       <div class="score-display">
         <div class="team-score">
@@ -21,14 +22,15 @@
           <span id="wickets" class="big-text">0</span>
         </div>
         <div class="over-display">
-          <span id="overs">0.0</span>
-          <span> / </span>
+          Overs: <span id="overs">0.0</span> /
           <span id="total-overs">20</span>
         </div>
         <div id="target-display" class="target-display"></div>
       </div>
 
-      <div class="balls-container" id="balls-container"></div>
+      <div class="balls-container" id="balls-container">
+        <!-- Balls for the current over will be dynamically inserted here -->
+      </div>
 
       <div class="run-rate-info">
         <p>CRR: <span id="crr">0.00</span></p>
@@ -37,15 +39,17 @@
 
       <div class="scorepad">
         <button class="btn" data-score="0" data-type="dot">Dot</button>
-        <button class="btn" data-type="out">Out</button>
+        <button class="btn btn-danger" data-type="out">Out</button>
         <button class="btn" data-type="run">Run</button>
         <button class="btn" data-type="byes">Byes</button>
         <button class="btn" data-score="1" data-type="run">1</button>
         <button class="btn" data-score="2" data-type="run">2</button>
-        <button class="btn" data-score="4" data-type="four">4</button>
-        <button class="btn" data-score="6" data-type="six">6</button>
-        <button class="btn" data-type="wide">Wide</button>
-        <button class="btn" data-type="noBall">No Ball</button>
+        <button class="btn btn-success" data-score="4" data-type="four">
+          4
+        </button>
+        <button class="btn btn-info" data-score="6" data-type="six">6</button>
+        <button class="btn btn-warning" data-type="wide">Wide</button>
+        <button class="btn btn-warning" data-type="noBall">No Ball</button>
       </div>
 
       <div class="actions">
@@ -56,37 +60,18 @@
         <button id="scoreboard-btn" class="btn btn-secondary">
           Scoreboard
         </button>
-        <button id="reset-btn" class="btn btn-danger">Reset</button>
+        <button id="reset-btn" class="btn btn-danger">Reset Match</button>
+      </div>
+
+      <div class="link-container">
+        <button id="link-copy-btn" class="btn btn-success">
+          Copy Live Score Link
+        </button>
+        <span id="link-url"></span>
       </div>
     </main>
-    <div
-      style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-      "
-    >
-      <button
-        id="link-copy-btn"
-        style="background-color: green"
-        class="btn btn-secondary"
-      >
-        Copy Live Score Link
-      </button>
-    </div>
-    <div
-        style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-      "
-      >
-      <span id="link-url" >
-      </span>
-    </div>
 
+    <!-- Main Modal for Scoreboard and Options -->
     <div class="modal" id="modal">
       <div class="modal-content">
         <button class="close-btn" id="close-modal">&times;</button>
@@ -94,17 +79,18 @@
       </div>
     </div>
 
+    <!-- Setup Modal -->
     <div class="modal" id="setup-modal">
       <div class="modal-content">
         <h2>Match Setup</h2>
         <form id="setup-form">
           <div class="form-group">
             <label for="team1">Team 1 Name</label>
-            <input type="text" id="team1" required />
+            <input type="text" id="team1" required placeholder="e.g., Lions" />
           </div>
           <div class="form-group">
             <label for="team2">Team 2 Name</label>
-            <input type="text" id="team2" required />
+            <input type="text" id="team2" required placeholder="e.g., Tigers" />
           </div>
           <div class="form-group">
             <label for="total-overs-input">Overs</label>
@@ -116,26 +102,52 @@
               value="20"
               required
             />
-            <!-- Inside the setup-form div, after the overs input -->
-            <div class="form-group">
-              <label for="toss-winner">Toss Winner</label>
-              <select id="toss-winner" required>
-                <option value="">Select team</option>
-                <option value="team1">Team 1</option>
-                <option value="team2">Team 2</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="toss-choice">Toss Choice</label>
-              <select id="toss-choice" required>
-                <option value="">Select choice</option>
-                <option value="bat">Bat</option>
-                <option value="bowl">Bowl</option>
-              </select>
-            </div>
           </div>
-          <button type="submit" class="btn">Start Match</button>
+          <div class="form-group">
+            <label for="toss-winner">Toss Winner</label>
+            <select id="toss-winner" required>
+              <option value="" disabled selected>Select team</option>
+              <!-- Options will be populated by JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="toss-choice">Toss Choice</label>
+            <select id="toss-choice" required>
+              <option value="" disabled selected>Select choice</option>
+              <option value="bat">Bat</option>
+              <option value="bowl">Bowl</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Start Match</button>
         </form>
+      </div>
+    </div>
+
+    <!-- New Modal for replacing alert() -->
+    <div class="modal" id="alert-modal">
+      <div class="modal-content">
+        <h3 id="alert-modal-title">Notification</h3>
+        <p id="alert-modal-text"></p>
+        <div class="modal-actions">
+          <button id="alert-modal-ok" class="btn btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Modal for replacing confirm() and prompt() -->
+    <div class="modal" id="input-modal">
+      <div class="modal-content">
+        <h3 id="input-modal-title">Input Required</h3>
+        <p id="input-modal-text"></p>
+        <div id="input-modal-body" class="form-group"></div>
+        <div class="modal-actions">
+          <button id="input-modal-cancel" class="btn btn-secondary">
+            Cancel
+          </button>
+          <button id="input-modal-confirm" class="btn btn-primary">
+            Confirm
+          </button>
+        </div>
       </div>
     </div>
 

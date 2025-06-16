@@ -1,6 +1,14 @@
 class CricketScoreCounter {
   constructor() {
-    this.state = {
+    this.state = this.getInitialState();
+
+    this.initElements();
+    this.initEventListeners();
+    this.loadFromLocalStorage();
+  }
+
+  getInitialState() {
+    return {
       matchId: Math.floor(Math.random() * 100000) + 1,
       team1: "Team A",
       team2: "Team B",
@@ -17,16 +25,13 @@ class CricketScoreCounter {
       inningsHistory: [],
       tossWinner: null,
       tossChoice: null,
+      matchEnded: false,
     };
-
-    this.initElements();
-    this.initEventListeners();
-    this.loadFromLocalStorage();
-    this.updateUI();
   }
 
   initElements() {
     this.elements = {
+      // Main UI
       teamsHeader: document.getElementById("teams-header"),
       battingTeam: document.getElementById("batting-team"),
       runs: document.getElementById("runs"),
@@ -38,13 +43,16 @@ class CricketScoreCounter {
       crr: document.getElementById("crr"),
       rrr: document.getElementById("rrr"),
       scorepadButtons: document.querySelectorAll(".scorepad .btn"),
+      // Action Buttons
       undoBtn: document.getElementById("undo-btn"),
       endInningsBtn: document.getElementById("end-innings-btn"),
       scoreboardBtn: document.getElementById("scoreboard-btn"),
       resetBtn: document.getElementById("reset-btn"),
+      // Main Modal
       modal: document.getElementById("modal"),
       closeModal: document.getElementById("close-modal"),
       modalBody: document.getElementById("modal-body"),
+      // Setup Modal
       setupModal: document.getElementById("setup-modal"),
       setupForm: document.getElementById("setup-form"),
       team1Input: document.getElementById("team1"),
@@ -52,18 +60,26 @@ class CricketScoreCounter {
       totalOversInput: document.getElementById("total-overs-input"),
       tossWinnerInput: document.getElementById("toss-winner"),
       tossChoiceInput: document.getElementById("toss-choice"),
+      // Link Copy
       copyBtn: document.getElementById("link-copy-btn"),
-      linkUrl: document.getElementById("link-url")
+      linkUrl: document.getElementById("link-url"),
+      // Custom Alert Modal
+      alertModal: document.getElementById("alert-modal"),
+      alertModalTitle: document.getElementById("alert-modal-title"),
+      alertModalText: document.getElementById("alert-modal-text"),
+      alertModalOk: document.getElementById("alert-modal-ok"),
+      // Custom Input Modal
+      inputModal: document.getElementById("input-modal"),
+      inputModalTitle: document.getElementById("input-modal-title"),
+      inputModalText: document.getElementById("input-modal-text"),
+      inputModalBody: document.getElementById("input-modal-body"),
+      inputModalCancel: document.getElementById("input-modal-cancel"),
+      inputModalConfirm: document.getElementById("input-modal-confirm"),
     };
   }
 
   initEventListeners() {
-    this.elements.copyBtn.addEventListener("click", () => {
-      this.elements.linkUrl.textContent = `http://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`;
-      navigator.clipboard.writeText(
-        `https://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`
-      );
-    });
+    this.elements.copyBtn.addEventListener("click", () => this.copyLink());
 
     this.elements.scorepadButtons.forEach((btn) => {
       btn.addEventListener("click", () => this.handleScorepadButton(btn));
@@ -71,12 +87,14 @@ class CricketScoreCounter {
 
     this.elements.undoBtn.addEventListener("click", () => this.undoLastBall());
     this.elements.endInningsBtn.addEventListener("click", () =>
-      this.endInnings()
+      this.confirmEndInnings()
     );
     this.elements.scoreboardBtn.addEventListener("click", () =>
       this.showScoreboard()
     );
-    this.elements.resetBtn.addEventListener("click", () => this.resetMatch());
+    this.elements.resetBtn.addEventListener("click", () =>
+      this.confirmResetMatch()
+    );
     this.elements.closeModal.addEventListener("click", () => this.closeModal());
 
     this.elements.setupForm.addEventListener("submit", (e) => {
@@ -84,195 +102,20 @@ class CricketScoreCounter {
       this.startMatch();
     });
 
-    if (!localStorage.getItem("cricketScoreData")) {
-      this.elements.setupModal.style.display = "flex";
-    }
+    // Populate toss winner dropdown when team names change
+    this.elements.team1Input.addEventListener("input", () =>
+      this.updateTossWinnerOptions()
+    );
+    this.elements.team2Input.addEventListener("input", () =>
+      this.updateTossWinnerOptions()
+    );
   }
 
-  handleScorepadButton(btn) {
-    const type = btn.dataset.type;
-    const score = parseInt(btn.dataset.score) || 0;
+  // --- Core Scoring Logic ---
 
-    // Directly add runs for 1, 2, 3 buttons
-    if (type === "run" && [1, 2, 3].includes(score)) {
-      this.addBall("run", score, 0);
-      return;
-    }
+  addBall(type, runs, wickets = 0, extraInfo = "") {
+    if (this.state.matchEnded) return;
 
-    switch (type) {
-      case "wide":
-      case "noBall":
-      case "byes":
-      case "out":
-      case "run": // For the Run button and other run values
-        this.showOptionsModal(type);
-        break;
-      default:
-        this.addBall(type, score, 0);
-    }
-  }
-
-  showOptionsModal(type) {
-    this.elements.modalBody.innerHTML = "";
-
-    const addCustomRunOption = (type, isOut = false) => {
-      const btn = document.createElement("button");
-      btn.className = "btn";
-      btn.textContent = "Custom Run";
-      btn.addEventListener("click", () => {
-        const runs = this.promptForRuns();
-        if (runs !== null) {
-          if (isOut) {
-            this.promptForOutType(runs);
-          } else {
-            this.addBall(type, runs, 0);
-          }
-        }
-        this.closeModal();
-      });
-      this.elements.modalBody.appendChild(btn);
-    };
-
-    switch (type) {
-      case "run":
-        // Custom run options
-        [0, 3, 5, 7].forEach((runs) => {
-          const btn = document.createElement("button");
-          btn.className = "btn";
-          btn.textContent = runs === 0 ? "Dot" : runs;
-          btn.addEventListener("click", () => {
-            this.addBall("run", runs, 0);
-            this.closeModal();
-          });
-          this.elements.modalBody.appendChild(btn);
-        });
-        addCustomRunOption("run");
-        break;
-
-      case "wide":
-        [0, 1, 2, 4].forEach((runs) => {
-          const btn = document.createElement("button");
-          btn.className = "btn";
-          btn.textContent = runs === 0 ? "Dot" : runs;
-          btn.addEventListener("click", () => {
-            this.addBall("wide", runs, 0);
-            this.closeModal();
-          });
-          this.elements.modalBody.appendChild(btn);
-        });
-        addCustomRunOption("wide");
-        break;
-
-      case "noBall":
-        [0, 1, 2, 4, 6].forEach((runs) => {
-          const btn = document.createElement("button");
-          btn.className = "btn";
-          btn.textContent = runs === 0 ? "Dot" : runs;
-          btn.addEventListener("click", () => {
-            this.addBall("noBall", runs, 0);
-            this.closeModal();
-          });
-          this.elements.modalBody.appendChild(btn);
-        });
-
-        // Run Out option for no ball
-        const noBallRunOutBtn = document.createElement("button");
-        noBallRunOutBtn.className = "btn";
-        noBallRunOutBtn.textContent = "Run Out";
-        noBallRunOutBtn.addEventListener("click", () => {
-          const runs = this.promptForRuns("How many runs before run out?");
-          if (runs !== null) {
-            this.addBall("noBall", runs, 1, "runOut");
-          }
-          this.closeModal();
-        });
-        this.elements.modalBody.appendChild(noBallRunOutBtn);
-
-        addCustomRunOption("noBall");
-        break;
-
-      case "byes":
-        [1, 2, 3, 4].forEach((runs) => {
-          const btn = document.createElement("button");
-          btn.className = "btn";
-          btn.textContent = runs;
-          btn.addEventListener("click", () => {
-            this.addBall("byes", runs, 0);
-            this.closeModal();
-          });
-          this.elements.modalBody.appendChild(btn);
-        });
-        addCustomRunOption("byes");
-        break;
-
-      case "out":
-        ["Bowled", "Caught", "LBW", "Stumped"].forEach((outType) => {
-          const btn = document.createElement("button");
-          btn.className = "btn";
-          btn.textContent = outType;
-          btn.addEventListener("click", () => {
-            this.addBall("out", 0, 1, outType.toLowerCase());
-            this.closeModal();
-          });
-          this.elements.modalBody.appendChild(btn);
-        });
-
-        // Run Out with runs option
-        const runOutBtn = document.createElement("button");
-        runOutBtn.className = "btn";
-        runOutBtn.textContent = "Run Out";
-        runOutBtn.addEventListener("click", () => {
-          const runs = this.promptForRuns("How many runs before run out?");
-          if (runs !== null) {
-            this.addBall("out", runs, 1, "runOut");
-          }
-          this.closeModal();
-        });
-        this.elements.modalBody.appendChild(runOutBtn);
-
-        break;
-    }
-
-    this.openModal();
-  }
-
-  promptForRuns(message = "How many runs?") {
-    const runs = prompt(message);
-    if (runs === null) return null;
-
-    const runsNum = parseInt(runs);
-    if (isNaN(runsNum)) {
-      // Fixed the syntax error here
-      alert("Please enter a valid number");
-      return this.promptForRuns(message);
-    }
-
-    return runsNum;
-  }
-
-  promptForOutType(runs) {
-    this.elements.modalBody.innerHTML = "<h3>Select out type:</h3>";
-
-    ["Bowled", "Caught", "LBW", "Stumped", "Run Out"].forEach((outType) => {
-      const btn = document.createElement("button");
-      btn.className = "btn";
-      btn.textContent = outType;
-      btn.addEventListener("click", () => {
-        if (outType === "Run Out") {
-          this.addBall("out", runs, 1, "runOut");
-        } else {
-          this.addBall("out", runs, 1, outType.toLowerCase());
-        }
-        this.closeModal();
-      });
-      this.elements.modalBody.appendChild(btn);
-    });
-
-    this.openModal();
-  }
-
-  addBall(type, runs, wickets, extraInfo) {
-    // Create ball object with all relevant information
     const ball = {
       type,
       runs,
@@ -281,21 +124,16 @@ class CricketScoreCounter {
       countable: !["wide", "noBall"].includes(type),
       timestamp: new Date().toISOString(),
     };
+    this.state.ballsHistory.push(ball);
 
-    // Calculate runs to add (extra 1 run penalty for wides/no-balls)
     let runsToAdd = runs;
     if (type === "wide" || type === "noBall") {
-      runsToAdd += 1;
+      runsToAdd += 1; // Penalty run
     }
 
-    // Update match statistics
     this.state.runs += runsToAdd;
     this.state.wickets += wickets;
 
-    // Add to complete balls history
-    this.state.ballsHistory.push(ball);
-
-    // Only count valid deliveries toward over completion
     if (ball.countable) {
       this.state.balls++;
       if (this.state.balls === 6) {
@@ -304,42 +142,9 @@ class CricketScoreCounter {
       }
     }
 
-    // Check for innings ending conditions
-    this.checkInningsEnd();
-
-    // Update UI immediately
     this.updateUI();
-
-    // Persist state
     this.saveToLocalStorage();
-
-    // Debug logging (optional)
-    console.log(
-      `Ball added:`,
-      ball,
-      `Score: ${this.state.runs}/${this.state.wickets}`,
-      `Over: ${this.state.overs}.${this.state.balls}`
-    );
-  }
-
-  checkInningsEnd() {
-    if (this.state.wickets >= 10) {
-      this.endInnings();
-      return;
-    }
-
-    if (this.state.overs >= this.state.totalOvers && this.state.balls === 0) {
-      this.endInnings();
-      return;
-    }
-
-    if (
-      this.state.currentInnings === 2 &&
-      this.state.runs >= this.state.target
-    ) {
-      this.endInnings();
-      return;
-    }
+    this.checkInningsEnd();
   }
 
   undoLastBall() {
@@ -362,238 +167,27 @@ class CricketScoreCounter {
       }
     }
 
-    this.updateUI();
-    this.saveToLocalStorage();
-  }
-
-  endInnings() {
-    // Save current innings data
-    this.state.inningsHistory.push({
-      team: this.state.battingTeam,
-      runs: this.state.runs,
-      wickets: this.state.wickets,
-      overs: this.state.overs + this.state.balls / 6,
-      ballsHistory: [...this.state.ballsHistory], // Store a copy of balls history
-    });
-
-    if (this.state.currentInnings === 1) {
-      this.state.target = this.state.runs + 1;
-      this.state.currentInnings = 2;
-      [this.state.battingTeam, this.state.bowlingTeam] = [
-        this.state.bowlingTeam,
-        this.state.battingTeam,
-      ];
-
-      // Reset counters
-      this.state.runs = 0;
-      this.state.wickets = 0;
-      this.state.overs = 0;
-      this.state.balls = 0;
-      this.state.ballsHistory = [];
-
-      alert(`${this.state.battingTeam} needs ${this.state.target} runs to win`);
-    } else {
-      // Match completed logic
-      let result;
-      if (this.state.runs >= this.state.target) {
-        const wicketsLeft = 10 - this.state.wickets;
-        result = `${this.state.battingTeam} won by ${wicketsLeft} wicket${
-          wicketsLeft !== 1 ? "s" : ""
-        }`;
-      } else {
-        const runsShort = this.state.target - this.state.runs - 1;
-        result = `${this.state.bowlingTeam} won by ${runsShort} run${
-          runsShort !== 1 ? "s" : ""
-        }`;
-      }
-      this.saveInServer();
-      alert(`Match completed! ${result}`);
-      this.resetMatch();
-      return;
+    // If we undid the last ball of the match, it's no longer ended
+    if (this.state.matchEnded) {
+      this.state.matchEnded = false;
     }
 
     this.updateUI();
     this.saveToLocalStorage();
   }
 
-  showScoreboard() {
-    let html = "<h2>Scoreboard</h2>";
-
-    // Toss information
-    if (this.state.tossWinner) {
-      const tossWinnerName =
-        this.state.tossWinner === "team1" ? this.state.team1 : this.state.team2;
-      html += `<p>Toss: ${tossWinnerName} won and chose to ${this.state.tossChoice}</p>`;
-    }
-
-    // Display all completed innings
-    this.state.inningsHistory.forEach((innings, index) => {
-      html += `
-      <div class="innings-score">
-        <h3>${innings.team} - ${innings.runs}/${
-        innings.wickets
-      } (${this.formatOvers(innings.overs)})</h3>
-        ${this.getBallsHistoryHTML(innings.ballsHistory)}
-      </div>
-    `;
-    });
-
-    // Current innings if not completed
-    if (
-      this.state.ballsHistory.length > 0 ||
-      this.state.runs > 0 ||
-      this.state.wickets > 0
-    ) {
-      html += `
-      <div class="innings-score">
-        <h3>${this.state.battingTeam} - ${this.state.runs}/${
-        this.state.wickets
-      } (${this.formatOvers(this.state.overs + this.state.balls / 6)})</h3>
-        ${this.getBallsHistoryHTML(this.state.ballsHistory)}
-      </div>
-    `;
-    }
-
-    // Target display for second innings
-    if (this.state.currentInnings === 2) {
-      html += `<p>Target: ${this.state.target}</p>`;
-    }
-
-    this.elements.modalBody.innerHTML = html;
-    this.openModal();
-  }
-
-  // New helper method to generate balls history HTML
-  getBallsHistoryHTML(ballsHistory) {
-    let html = '<div class="balls-history">';
-    let overNumber = 1;
-    let currentOverBalls = [];
-    let validBallsInOver = 0;
-
-    ballsHistory.forEach((ball) => {
-      currentOverBalls.push(ball);
-
-      if (ball.countable) {
-        validBallsInOver++;
-      }
-
-      // When we have 6 valid balls, complete the over (including any extras)
-      if (validBallsInOver === 6) {
-        html += `
-        <div class="over-row">
-          <div class="over-number">${overNumber++}</div>
-          <div class="balls-row">
-            ${currentOverBalls.map((b) => this.getBallHTML(b)).join("")}
-          </div>
-        </div>
-      `;
-        currentOverBalls = [];
-        validBallsInOver = 0;
-      }
-    });
-
-    // Add any remaining balls in incomplete over
-    if (currentOverBalls.length > 0) {
-      html += `
-      <div class="over-row">
-        <div class="over-number">${overNumber}</div>
-        <div class="balls-row">
-          ${currentOverBalls.map((b) => this.getBallHTML(b)).join("")}
-        </div>
-      </div>
-    `;
-    }
-
-    html += "</div>";
-    return html;
-  }
-
-  getBallHTML(ball) {
-    let ballClass = "ball";
-    let text = "";
-
-    switch (ball.type) {
-      case "dot":
-        ballClass += " ball-dot";
-        text = "•";
-        break;
-      case "run":
-        ballClass += " ball-run";
-        text = ball.runs;
-        break;
-      case "four":
-        ballClass += " ball-four";
-        text = "4";
-        break;
-      case "six":
-        ballClass += " ball-six";
-        text = "6";
-        break;
-      case "wide":
-        ballClass += " ball-wide";
-        text = ball.runs > 0 ? `${ball.runs}WD` : "WD";
-        break;
-      case "noBall":
-        ballClass += " ball-no-ball";
-        if (ball.wickets === 1) {
-          text = ball.runs > 0 ? `${ball.runs}RO` : "RO";
-        } else {
-          text = ball.runs > 0 ? `${ball.runs}NB` : "NB";
-        }
-        break;
-      case "byes":
-        ballClass += " ball-bye";
-        text = `${ball.runs}B`;
-        break;
-      case "out":
-        ballClass += " ball-out";
-        if (ball.extraInfo === "runOut") {
-          text = ball.runs > 0 ? `${ball.runs}RO` : "RO";
-        } else {
-          text = ball.runs > 0 ? `${ball.runs}W` : "W";
-        }
-        break;
-    }
-
-    return `<span class="${ballClass}">${text}</span>`;
-  }
-
-  resetMatch() {
-    if (!confirm("Are you sure you want to reset the match?")) return;
-
-    this.state = {
-      team1: this.state.team1,
-      team2: this.state.team2,
-      totalOvers: this.state.totalOvers,
-      currentInnings: 1,
-      battingTeam: this.state.team1,
-      bowlingTeam: this.state.team2,
-      target: 0,
-      runs: 0,
-      wickets: 0,
-      overs: 0,
-      balls: 0,
-      ballsHistory: [],
-      inningsHistory: [],
-      tossWinner: null,
-      tossChoice: null,
-    };
-
-    localStorage.removeItem("cricketScoreData");
-    this.updateUI();
-    this.elements.setupModal.style.display = "flex";
-  }
+  // --- Match Flow and State Management ---
 
   startMatch() {
     this.state.matchId = Math.floor(Math.random() * 100000) + 1;
-    this.elements.linkUrl.textContent = `http://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`;
     this.state.team1 = this.elements.team1Input.value || "Team 1";
     this.state.team2 = this.elements.team2Input.value || "Team 2";
     this.state.totalOvers = parseInt(this.elements.totalOversInput.value) || 20;
     this.state.tossWinner = this.elements.tossWinnerInput.value;
     this.state.tossChoice = this.elements.tossChoiceInput.value;
 
-    // Set batting and bowling teams based on toss
+    const tossWinnerName =
+      this.state.tossWinner === "team1" ? this.state.team1 : this.state.team2;
     if (this.state.tossWinner === "team1") {
       this.state.battingTeam =
         this.state.tossChoice === "bat" ? this.state.team1 : this.state.team2;
@@ -609,115 +203,578 @@ class CricketScoreCounter {
     this.elements.setupModal.style.display = "none";
     this.updateUI();
     this.saveToLocalStorage();
-
-    // Show toss result
-    alert(
-      `${
-        this.state.tossWinner === "team1" ? this.state.team1 : this.state.team2
-      } won the toss and chose to ${this.state.tossChoice}`
+    this.showAlert(
+      "Match Started",
+      `${tossWinnerName} won the toss and chose to ${this.state.tossChoice}.`
     );
   }
 
+  checkInningsEnd() {
+    const isOverLimit = this.state.overs >= this.state.totalOvers;
+    const allOut = this.state.wickets >= 10;
+    const targetReached =
+      this.state.currentInnings === 2 && this.state.runs >= this.state.target;
+
+    if (isOverLimit || allOut || targetReached) {
+      // Use a timeout to allow the UI to update with the final ball before ending the innings
+      setTimeout(() => this.endInnings(), 500);
+    }
+  }
+
+  endInnings() {
+    if (this.state.matchEnded) return;
+
+    this.state.inningsHistory.push({
+      team: this.state.battingTeam,
+      runs: this.state.runs,
+      wickets: this.state.wickets,
+      overs: this.state.overs + this.state.balls / 10,
+      ballsHistory: [...this.state.ballsHistory],
+    });
+
+    if (this.state.currentInnings === 1) {
+      this.state.target = this.state.runs + 1;
+      this.state.currentInnings = 2;
+      [this.state.battingTeam, this.state.bowlingTeam] = [
+        this.state.bowlingTeam,
+        this.state.battingTeam,
+      ];
+      this.state.runs = 0;
+      this.state.wickets = 0;
+      this.state.overs = 0;
+      this.state.balls = 0;
+      this.state.ballsHistory = [];
+      this.showAlert(
+        "Innings Break",
+        `${this.state.battingTeam} needs ${this.state.target} runs to win.`
+      );
+    } else {
+      this.finishMatch();
+    }
+
+    this.updateUI();
+    this.saveToLocalStorage();
+  }
+
+  finishMatch() {
+    this.state.matchEnded = true;
+    let result;
+    if (this.state.runs >= this.state.target) {
+      const wicketsLeft = 10 - this.state.wickets;
+      result = `${this.state.battingTeam} won by ${wicketsLeft} wicket${
+        wicketsLeft !== 1 ? "s" : ""
+      }.`;
+    } else if (this.state.runs === this.state.target - 1) {
+      result = "The match is a tie!";
+    } else {
+      const runsShort = this.state.target - this.state.runs - 1;
+      result = `${this.state.bowlingTeam} won by ${runsShort} run${
+        runsShort !== 1 ? "s" : ""
+      }.`;
+    }
+    this.saveInServer();
+    this.showAlert("Match Completed!", result);
+    this.updateUI();
+  }
+
+  resetMatch() {
+    const oldState = this.getInitialState();
+    // Keep team names and over counts for convenience
+    oldState.team1 = this.state.team1;
+    oldState.team2 = this.state.team2;
+    oldState.totalOvers = this.state.totalOvers;
+    this.state = oldState;
+
+    localStorage.removeItem("cricketScoreData");
+    this.updateUI();
+    this.updateTossWinnerOptions();
+    this.elements.setupModal.style.display = "flex";
+  }
+
+  // --- UI Update and Rendering ---
+
   updateUI() {
-    // Update basic score information
     this.elements.teamsHeader.textContent = `${this.state.team1} vs ${this.state.team2}`;
     this.elements.battingTeam.textContent = this.state.battingTeam;
     this.elements.runs.textContent = this.state.runs;
     this.elements.wickets.textContent = this.state.wickets;
     this.elements.overs.textContent = this.formatOvers(
-      this.state.overs + this.state.balls / 6
+      this.state.overs,
+      this.state.balls
     );
     this.elements.totalOvers.textContent = this.state.totalOvers;
 
-    // Clear and update balls container with current over only
-    this.elements.ballsContainer.innerHTML = "";
-    const currentOverBalls = this.getCurrentOverBalls();
-    currentOverBalls.forEach((ball) => {
-      this.elements.ballsContainer.innerHTML += this.getBallHTML(ball);
-    });
+    this.elements.ballsContainer.innerHTML = this.getCurrentOverBalls()
+      .map((ball) => this.getBallHTML(ball))
+      .join("");
 
-    // Update target display for second innings
     if (this.state.currentInnings === 2) {
-      const runsNeeded = this.state.target - this.state.runs;
+      const runsNeeded = Math.max(0, this.state.target - this.state.runs);
       const ballsRemaining =
         this.state.totalOvers * 6 - (this.state.overs * 6 + this.state.balls);
-      this.elements.targetDisplay.innerHTML = `
-      Target: ${this.state.target} | Need ${runsNeeded} in ${ballsRemaining} balls
-    `;
+      this.elements.targetDisplay.innerHTML = `Target: ${this.state.target} | Need ${runsNeeded} in ${ballsRemaining} balls`;
       this.elements.targetDisplay.style.display = "block";
     } else {
       this.elements.targetDisplay.style.display = "none";
     }
 
-    // Update run rates
     this.elements.crr.textContent = this.calculateCRR().toFixed(2);
     this.elements.rrr.textContent = this.calculateRRR().toFixed(2);
 
-    // Disable buttons if match ended
-    const matchEnded =
-      this.state.currentInnings === 2 &&
-      (this.state.runs >= this.state.target ||
-        this.state.wickets >= 10 ||
-        (this.state.overs >= this.state.totalOvers && this.state.balls === 0));
-
-    document.querySelectorAll(".scorepad .btn").forEach((btn) => {
-      btn.disabled = matchEnded;
-    });
+    document
+      .querySelectorAll(".scorepad .btn, #undo-btn, #end-innings-btn")
+      .forEach((btn) => {
+        btn.disabled = this.state.matchEnded;
+      });
   }
 
+  /**
+   * BUG FIX: Rewritten function to correctly identify balls in the current over.
+   * It iterates backwards from the end of the history, collecting balls
+   * until it has collected all countable balls for the current over.
+   */
   getCurrentOverBalls() {
-    // Calculate how many completed overs we have
-    const completedOvers = this.state.overs;
+    const allBalls = this.state.ballsHistory;
+    if (allBalls.length === 0) return [];
 
-    // Count balls to skip (all balls from completed overs)
-    let ballsToSkip = 0;
-    let countableBalls = 0;
+    const overs = [];
+    let currentOver = [];
+    let countableBallsInOver = 0;
 
-    for (let i = 0; i < this.state.ballsHistory.length; i++) {
-      if (this.state.ballsHistory[i].countable) {
-        countableBalls++;
-        if (countableBalls > completedOvers * 6) {
-          break; // We've reached the current over
-        }
+    for (const ball of allBalls) {
+      currentOver.push(ball);
+      if (ball.countable) {
+        countableBallsInOver++;
       }
-      if (countableBalls <= completedOvers * 6) {
-        ballsToSkip++;
+
+      if (countableBallsInOver === 6) {
+        overs.push(currentOver);
+        currentOver = [];
+        countableBallsInOver = 0;
       }
     }
 
-    // Return balls from current over only
-    return this.state.ballsHistory.slice(ballsToSkip);
+    // The remaining balls that haven't been grouped into a full over are the current over.
+    return currentOver;
   }
 
-  calculateCRR() {
-    const totalBalls = this.state.overs * 6 + this.state.balls;
-    if (totalBalls === 0) return 0;
-    return (this.state.runs / totalBalls) * 6;
+  showScoreboard() {
+    let html = "<h2>Scoreboard</h2>";
+    if (this.state.tossWinner) {
+      const tossWinnerName =
+        this.state.tossWinner === "team1" ? this.state.team1 : this.state.team2;
+      html += `<p><strong>Toss:</strong> ${tossWinnerName} won and chose to ${this.state.tossChoice}.</p>`;
+    }
+
+    this.state.inningsHistory.forEach((innings) => {
+      html += `<div class="innings-score">
+        <h3>${innings.team} - ${innings.runs}/${
+        innings.wickets
+      } (${this.formatOvers(
+        Math.floor(innings.overs),
+        Math.round((innings.overs % 1) * 10)
+      )})</h3>
+        ${this.getBallsHistoryHTML(innings.ballsHistory)}
+      </div>`;
+    });
+
+    if (
+      !this.state.matchEnded &&
+      (this.state.ballsHistory.length > 0 || this.state.runs > 0)
+    ) {
+      html += `<div class="innings-score">
+        <h3>${this.state.battingTeam} - ${this.state.runs}/${
+        this.state.wickets
+      } (${this.formatOvers(this.state.overs, this.state.balls)})</h3>
+        ${this.getBallsHistoryHTML(this.state.ballsHistory)}
+      </div>`;
+    }
+
+    if (this.state.currentInnings === 2) {
+      html += `<p class="target-display" style="display:block">Target: ${this.state.target}</p>`;
+    }
+
+    this.elements.modalBody.innerHTML = html;
+    this.openModal();
   }
 
-  calculateRRR() {
-    if (this.state.currentInnings !== 2) return 0;
+  getBallsHistoryHTML(ballsHistory) {
+    let html = '<div class="balls-history">';
+    let overNumber = 1;
+    let currentOverBalls = [];
+    let validBallsInOver = 0;
 
-    const runsNeeded = this.state.target - this.state.runs;
-    const ballsRemaining =
-      this.state.totalOvers * 6 - (this.state.overs * 6 + this.state.balls);
+    ballsHistory.forEach((ball) => {
+      currentOverBalls.push(ball);
+      if (ball.countable) validBallsInOver++;
+      if (validBallsInOver === 6) {
+        html += `<div class="over-row"><div class="over-number">${overNumber++}</div><div class="balls-row">${currentOverBalls
+          .map((b) => this.getBallHTML(b))
+          .join("")}</div></div>`;
+        currentOverBalls = [];
+        validBallsInOver = 0;
+      }
+    });
 
-    if (ballsRemaining <= 0 || runsNeeded <= 0) return 0;
-    return (runsNeeded / ballsRemaining) * 6;
+    if (currentOverBalls.length > 0) {
+      html += `<div class="over-row"><div class="over-number">${overNumber}</div><div class="balls-row">${currentOverBalls
+        .map((b) => this.getBallHTML(b))
+        .join("")}</div></div>`;
+    }
+
+    html += "</div>";
+    return html;
   }
 
-  formatOvers(overs) {
-    const fullOvers = Math.floor(overs);
-    const balls = Math.round((overs - fullOvers) * 6);
-    return `${fullOvers}.${balls}`;
+  getBallHTML(ball) {
+    let ballClass = "ball";
+    let text = "";
+    let title = `${ball.type.charAt(0).toUpperCase() + ball.type.slice(1)}`;
+
+    switch (ball.type) {
+      case "dot":
+        ballClass += " ball-dot";
+        text = "•";
+        title = "Dot ball";
+        break;
+      case "run":
+        ballClass += " ball-run";
+        text = ball.runs;
+        title = `${ball.runs} run(s)`;
+        break;
+      case "four":
+        ballClass += " ball-four";
+        text = "4";
+        title = "Four";
+        break;
+      case "six":
+        ballClass += " ball-six";
+        text = "6";
+        title = "Six";
+        break;
+      case "wide":
+        ballClass += " ball-wide";
+        title = "Wide";
+        if (ball.runs > 0) title += ` + ${ball.runs} bye(s)`;
+
+        if (ball.wickets > 0) {
+          text = ball.runs > 0 ? `${ball.runs}WD+W` : `WD+W`;
+          title += ` + Wicket (${ball.extraInfo})`;
+        } else {
+          text = ball.runs > 0 ? `${ball.runs}WD` : "WD";
+        }
+        break;
+      case "noBall":
+        ballClass += " ball-no-ball";
+        title = "No Ball";
+        if (ball.runs > 0) title += ` + ${ball.runs} run(s)`;
+
+        if (ball.wickets > 0) {
+          text = ball.runs > 0 ? `${ball.runs}NB+W` : "NB+W";
+          title += ` + Wicket (run out)`;
+        } else {
+          text = ball.runs > 0 ? `${ball.runs}NB` : "NB";
+        }
+        break;
+      case "byes":
+        ballClass += " ball-byes";
+        text = `${ball.runs}B`;
+        title = `${ball.runs} Bye(s)`;
+        break;
+      case "out":
+        ballClass += " ball-out";
+        text = ball.runs > 0 ? `${ball.runs}W` : "W";
+        title = `Wicket (${ball.extraInfo})`;
+        if (ball.runs > 0) title += ` + ${ball.runs} run(s)`;
+        break;
+    }
+    return `<span class="${ballClass}" title="${title}">${text}</span>`;
+  }
+
+  // --- Event Handlers and Modal Logic ---
+
+  handleScorepadButton(btn) {
+    const type = btn.dataset.type;
+    const score = parseInt(btn.dataset.score);
+    if (
+      ["dot", "four", "six"].includes(type) ||
+      (type === "run" && [1, 2].includes(score))
+    ) {
+      this.addBall(type, score, 0);
+    } else {
+      this.showOptionsModal(type);
+    }
+  }
+
+  showOptionsModal(type) {
+    this.elements.modalBody.innerHTML = "";
+    const createBtn = (text, onClick) => {
+      const btn = document.createElement("button");
+      btn.className = "btn";
+      btn.textContent = text;
+      btn.addEventListener("click", onClick);
+      this.elements.modalBody.appendChild(btn);
+    };
+
+    switch (type) {
+      case "wide":
+        // Add options for runs scored along with the wide (removed 3)
+        [0, 1, 2, 4].forEach((runs) => {
+          const text =
+            runs === 0
+              ? "Wide (0 Byes)"
+              : `Wide + ${runs} Bye${runs !== 1 ? "s" : ""}`;
+          createBtn(text, () => {
+            this.addBall("wide", runs, 0);
+            this.closeModal();
+          });
+        });
+
+        // Add Wide + Custom Byes option
+        createBtn("Wide + Custom", () => {
+          this.closeModal();
+          this.showInputModal({
+            title: "Custom Byes on Wide",
+            text: "Enter how many byes were scored with the wide ball.",
+            inputType: "number",
+            initialValue: 0,
+            onConfirm: (runs) => this.addBall("wide", runs, 0),
+          });
+        });
+
+        // Add Stumped option for a wide
+        createBtn("Stumped", () => {
+          this.addBall("wide", 0, 1, "stumped");
+          this.closeModal();
+        });
+
+        // Add Run Out option for a wide
+        createBtn("Run Out", () => {
+          this.closeModal();
+          this.showInputModal({
+            title: "Runs Before Out?",
+            text: "Enter runs completed before the run out (excluding the wide itself).",
+            inputType: "number",
+            initialValue: 0,
+            onConfirm: (runs) => this.addBall("wide", runs, 1, "runOut"),
+          });
+        });
+        break;
+
+      case "run":
+        // Removed 'Dot' (0) from these initial options
+        [3, 5].forEach((val) => {
+          createBtn(val.toString(), () => {
+            this.addBall(type, val, 0);
+            this.closeModal();
+          });
+        });
+        // Kept Custom for other run values
+        createBtn("Custom", () => {
+          this.closeModal();
+          this.showInputModal({
+            title: `Custom ${type} runs`,
+            text: `Enter number of runs for this ${type}.`,
+            inputType: "number",
+            initialValue: 0,
+            onConfirm: (runs) => this.addBall(type, runs, 0),
+          });
+        });
+        break;
+
+      case "out":
+        ["Bowled", "Caught", "LBW", "Stumped"].forEach((outType) => {
+          createBtn(outType, () => {
+            this.addBall("out", 0, 1, outType.toLowerCase());
+            this.closeModal();
+          });
+        });
+        createBtn("Run Out", () => {
+          this.closeModal();
+          this.showInputModal({
+            title: "Runs Before Out?",
+            text: "Enter how many runs were completed before the run out.",
+            inputType: "number",
+            initialValue: 0,
+            onConfirm: (runs) => this.addBall("out", runs, 1, "runOut"),
+          });
+        });
+        break;
+
+      case "noBall":
+      case "byes":
+        const options = { noBall: [0, 1, 2, 4, 6], byes: [1, 2, 3, 4] };
+        options[type].forEach((val) => {
+          createBtn(val === 0 ? "Dot" : val.toString(), () => {
+            this.addBall(type, val, 0);
+            this.closeModal();
+          });
+        });
+
+        createBtn("Custom", () => {
+          this.closeModal();
+          this.showInputModal({
+            title: `Custom ${type} runs`,
+            text: `Enter number of runs for this ${type}.`,
+            inputType: "number",
+            initialValue: 0,
+            onConfirm: (runs) => this.addBall(type, runs, 0),
+          });
+        });
+
+        if (type === "noBall") {
+          createBtn("Run Out", () => {
+            this.closeModal();
+            this.showInputModal({
+              title: "Runs Before Out?",
+              text: "Enter runs on the no-ball before the run out.",
+              inputType: "number",
+              initialValue: 0,
+              onConfirm: (runs) => this.addBall("noBall", runs, 1, "runOut"),
+            });
+          });
+        }
+        break;
+    }
+
+    this.openModal();
+  }
+
+  confirmEndInnings() {
+    this.showInputModal({
+      title: "End Innings?",
+      text: "Are you sure you want to end the current innings?",
+      showInput: false,
+      onConfirm: () => this.endInnings(),
+    });
+  }
+
+  confirmResetMatch() {
+    this.showInputModal({
+      title: "Reset Match?",
+      text: "This will clear all scores and restart the match setup. This action cannot be undone.",
+      showInput: false,
+      confirmText: "Yes, Reset",
+      onConfirm: () => this.resetMatch(),
+    });
+  }
+
+  // --- Custom Modals (replaces alert, prompt, confirm) ---
+
+  showAlert(title, text) {
+    this.elements.alertModalTitle.textContent = title;
+    this.elements.alertModalText.textContent = text;
+    this.elements.alertModal.style.display = "flex";
+
+    const okListener = () => {
+      this.elements.alertModal.style.display = "none";
+      this.elements.alertModalOk.removeEventListener("click", okListener);
+    };
+    this.elements.alertModalOk.addEventListener("click", okListener);
+  }
+
+  showInputModal({
+    title,
+    text,
+    inputType = "number",
+    initialValue = "",
+    showInput = true,
+    confirmText = "Confirm",
+    onConfirm,
+    onCancel,
+  }) {
+    this.elements.inputModalTitle.textContent = title;
+    this.elements.inputModalText.textContent = text;
+    this.elements.inputModalBody.innerHTML = "";
+
+    if (showInput) {
+      const input = document.createElement("input");
+      input.type = inputType;
+      input.id = "custom-input-field";
+      input.value = initialValue;
+      if (inputType === "number") input.min = 0;
+      this.elements.inputModalBody.appendChild(input);
+    }
+
+    this.elements.inputModalConfirm.textContent = confirmText;
+    this.elements.inputModal.style.display = "flex";
+
+    const confirmListener = () => {
+      const value = showInput
+        ? document.getElementById("custom-input-field").value || 0
+        : null;
+      if (onConfirm)
+        onConfirm(inputType === "number" ? parseInt(value) : value);
+      cleanup();
+    };
+
+    const cancelListener = () => {
+      if (onCancel) onCancel();
+      cleanup();
+    };
+
+    const cleanup = () => {
+      this.elements.inputModal.style.display = "none";
+      this.elements.inputModalConfirm.removeEventListener(
+        "click",
+        confirmListener
+      );
+      this.elements.inputModalCancel.removeEventListener(
+        "click",
+        cancelListener
+      );
+    };
+
+    this.elements.inputModalConfirm.addEventListener("click", confirmListener);
+    this.elements.inputModalCancel.addEventListener("click", cancelListener);
   }
 
   openModal() {
     this.elements.modal.style.display = "flex";
   }
-
   closeModal() {
     this.elements.modal.style.display = "none";
+  }
+
+  // --- Helpers and Data Persistence ---
+
+  calculateCRR() {
+    const totalBalls = this.state.overs * 6 + this.state.balls;
+    return totalBalls === 0 ? 0 : (this.state.runs / totalBalls) * 6;
+  }
+
+  calculateRRR() {
+    if (this.state.currentInnings !== 2 || this.state.target <= 0) return 0;
+    const runsNeeded = this.state.target - this.state.runs;
+    const ballsRemaining =
+      this.state.totalOvers * 6 - (this.state.overs * 6 + this.state.balls);
+    return ballsRemaining <= 0 || runsNeeded <= 0
+      ? 0
+      : (runsNeeded / ballsRemaining) * 6;
+  }
+
+  formatOvers(overs, balls) {
+    return `${overs}.${balls}`;
+  }
+
+  copyLink() {
+    const url = `http://score.dmvrhinos.com/viewonly/?matchId=${this.state.matchId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      this.elements.linkUrl.textContent = "Link Copied!";
+      setTimeout(() => {
+        this.elements.linkUrl.textContent = "";
+      }, 2000);
+    });
+  }
+
+  updateTossWinnerOptions() {
+    const team1Name = this.elements.team1Input.value || "Team 1";
+    const team2Name = this.elements.team2Input.value || "Team 2";
+    this.elements.tossWinnerInput.innerHTML = `
+          <option value="" disabled selected>Select team</option>
+          <option value="team1">${team1Name}</option>
+          <option value="team2">${team2Name}</option>
+      `;
   }
 
   getScore() {
@@ -746,7 +803,7 @@ class CricketScoreCounter {
           ballsBowled: 0,
         },
         battingTeam: this.state.bowlingTeam,
-        bowlingTeam: this.state.battingTeam
+        bowlingTeam: this.state.battingTeam,
       };
       secondInning = currentInning;
     }
@@ -788,10 +845,16 @@ class CricketScoreCounter {
     if (savedData) {
       try {
         Object.assign(this.state, JSON.parse(savedData));
+        this.elements.setupModal.style.display = "none";
       } catch (e) {
         console.error("Failed to load saved data", e);
+        this.elements.setupModal.style.display = "flex";
       }
+    } else {
+      this.elements.setupModal.style.display = "flex";
     }
+    this.updateTossWinnerOptions();
+    this.updateUI();
   }
 }
 
