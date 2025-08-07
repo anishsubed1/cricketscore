@@ -29,113 +29,121 @@
         overflow: hidden;
         border: 1px solid #e0e0e0;
         position: relative;
+        padding-bottom: 10px;
       }
 
       .header {
         background: linear-gradient(45deg, #1a73e8, #4285f4);
         color: white;
-        padding: 12px;
+        padding: 16px;
         text-align: center;
       }
 
       .header-teams {
-        font-size: 2.2em;
+        font-size: 2.8em;
         font-weight: 700;
         line-height: 1.2;
       }
 
       .header-title {
-        font-size: 1.2em;
+        font-size: 1.8em;
         font-weight: 400;
         opacity: 0.9;
-        margin-top: 4px;
+        margin-top: 6px;
+      }
+
+      .innings-container {
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+        padding: 16px;
+        flex-wrap: wrap;
       }
 
       .innings {
-        padding: 8px 12px;
-        border-bottom: 1px solid #f0f0f0;
-      }
-
-      .innings:last-child {
-        border-bottom: none;
+        flex: 1 1 48%;
+        padding: 12px;
+        border: 1px solid #eee;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
       }
 
       .team-info {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
       }
 
       .team-name {
         font-weight: 700;
-        font-size: 1.4em;
+        font-size: 2em;
         color: #333;
       }
 
       .score {
-        font-size: 2em;
+        font-size: 3em;
         font-weight: 800;
         color: #1a73e8;
       }
 
       .overs {
-        font-size: 1em;
+        font-size: 1.5em;
         color: #555;
-        margin-bottom: 4px;
+        margin-bottom: 10px;
       }
 
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-        gap: 8px;
-        margin-top: 4px;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 10px;
+        margin-top: 6px;
       }
 
       .stat {
         background: #f8f9fa;
-        padding: 8px;
+        padding: 10px;
         border-radius: 6px;
         text-align: center;
       }
 
       .stat-label {
-        font-size: 0.85em;
+        font-size: 1em;
         color: #666;
         text-transform: uppercase;
       }
 
       .stat-value {
-        font-size: 1.2em;
+        font-size: 1.6em;
         font-weight: 600;
         color: #333;
       }
 
       .target-info {
-        margin-top: 6px;
-        padding: 8px;
+        margin-top: 10px;
+        padding: 10px;
         background-color: #e8f0fe;
         border-radius: 6px;
         text-align: center;
-        font-size: 1.1em;
+        font-size: 1.6em;
         font-weight: 600;
         color: #1967d2;
       }
 
       .status {
         text-align: center;
-        padding: 8px;
+        padding: 10px;
         background-color: #f8f9fa;
-        font-weight: 500;
-        font-size: 1.1em;
+        font-weight: 600;
+        font-size: 1.5em;
         color: #333;
       }
 
       .error {
         color: #d93025;
         text-align: center;
-        padding: 12px;
-        font-size: 1.2em;
+        padding: 14px;
+        font-size: 1.5em;
       }
 
       .win-overlay {
@@ -166,22 +174,22 @@
         background: white;
         border-radius: 10px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        padding: 16px 24px;
+        padding: 24px 36px;
       }
 
       #win-message-text {
-        font-size: 2em;
+        font-size: 2.5em;
         font-weight: 700;
         color: #1a73e8;
       }
 
       .close-button {
         position: absolute;
-        top: 8px;
-        right: 12px;
+        top: 10px;
+        right: 15px;
         background: none;
         border: none;
-        font-size: 1.8em;
+        font-size: 2em;
         line-height: 1;
         color: #aaa;
         cursor: pointer;
@@ -198,7 +206,7 @@
         <div id="header-teams" class="header-teams">Loading Match...</div>
         <div id="header-title" class="header-title">Live Score</div>
       </div>
-      <div id="scoreboard-body">
+      <div id="scoreboard-body" class="innings-container">
         <!-- Score data will be injected here by JavaScript -->
       </div>
       <div class="status" id="status">Loading score...</div>
