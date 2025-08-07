@@ -1,1 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Cricket Scoreboard</title>
+    <!-- Confetti library for celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: transparent;
+        overflow: hidden;
+      }
 
+      .scoreboard {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        background: white;
+        border-top: 2px solid #1a73e8;
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        box-sizing: border-box;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        height: 100px;
+        overflow-x: auto;
+      }
+
+      .header {
+        margin-right: 20px;
+        text-align: left;
+        min-width: 200px;
+      }
+
+      .header-teams {
+        font-size: 1.4em;
+        font-weight: 600;
+        color: #1a73e8;
+      }
+
+      .header-title {
+        font-size: 1em;
+        color: #555;
+      }
+
+      .innings {
+        display: flex;
+        align-items: center;
+        margin-right: 40px;
+        min-width: 280px;
+      }
+
+      .team-info {
+        display: flex;
+        flex-direction: column;
+        margin-right: 20px;
+      }
+
+      .team-name {
+        font-weight: 600;
+        font-size: 1.1em;
+        color: #333;
+      }
+
+      .score {
+        font-size: 1.8em;
+        font-weight: 700;
+        color: #1a73e8;
+      }
+
+      .overs {
+        font-size: 1em;
+        color: #555;
+      }
+
+      .stats-grid {
+        display: flex;
+        gap: 10px;
+        margin-left: 10px;
+      }
+
+      .stat {
+        background: #f1f3f4;
+        padding: 6px 10px;
+        border-radius: 6px;
+        text-align: center;
+        min-width: 80px;
+      }
+
+      .stat-label {
+        font-size: 0.7em;
+        color: #666;
+        text-transform: uppercase;
+      }
+
+      .stat-value {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .target-info {
+        font-size: 1em;
+        color: #1967d2;
+        font-weight: 500;
+        padding-left: 10px;
+        min-width: 220px;
+      }
+
+      .status {
+        font-size: 1em;
+        color: #333;
+        font-weight: 500;
+        min-width: 150px;
+      }
+
+      .error {
+        color: #d93025;
+        font-size: 1em;
+        padding-left: 20px;
+      }
+
+      /* Confetti Overlay */
+      .win-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        text-align: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s, visibility 0.5s;
+        z-index: 2000;
+      }
+      .win-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+      .win-message {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 20px 40px;
+        position: relative;
+      }
+      #win-message-text {
+        font-size: 2em;
+        font-weight: 700;
+        color: #1a73e8;
+      }
+      .close-button {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        background: none;
+        border: none;
+        font-size: 1.5em;
+        color: #aaa;
+        cursor: pointer;
+      }
+      .close-button:hover {
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scoreboard">
+      <div class="header">
+        <div id="header-teams" class="header-teams">Loading Match...</div>
+        <div id="header-title" class="header-title">Live Score</div>
+      </div>
+      <div id="scoreboard-body">
+        <!-- Score data will be injected here by JavaScript -->
+      </div>
+      <div class="status" id="status">Loading score...</div>
+      <!-- This container will show the win message -->
+      <div id="win-overlay" class="win-overlay">
+        <div class="win-message">
+          <div id="win-message-text"></div>
+          <button id="close-win-overlay" class="close-button">&times;</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const scoreboardBody = document.getElementById("scoreboard-body");
+        const statusDiv = document.getElementById("status");
+        const winOverlay = document.getElementById("win-overlay");
+        const winMessageText = document.getElementById("win-message-text");
+        const closeWinOverlayBtn = document.getElementById("close-win-overlay");
+        const headerTeams = document.getElementById("header-teams");
+
+        let matchId;
+        let intervalId;
+        let isMatchOver = false;
+
+        // Add event listener to close the win overlay
+        closeWinOverlayBtn.addEventListener("click", () => {
+          winOverlay.classList.remove("show");
+        });
+
+        // Get matchId from the URL
+        function getMatchIdFromUrl() {
+          const params = new URLSearchParams(window.location.search);
+          return params.get("matchId");
+        }
+
+        // Calculate total balls bowled from over data
+        function calculateBallsBowled(over) {
+          if (!over) return 0;
+          return over.overNumber * 6 + over.ballsBowled;
+        }
+
+        // Fetches and updates the score
+        async function fetchScore() {
+          if (isMatchOver) {
+            clearInterval(intervalId);
+            return;
+          }
+          // Hardcoded matchId for testing as requested by the user
+          if (!matchId) {
+            scoreboardBody.innerHTML = `<div class="error">Match ID not found in URL. Please add ?matchId=&lt;your_match_id&gt; to the URL.</div>`;
+            statusDiv.textContent = "Error";
+            clearInterval(intervalId);
+            return;
+          }
+
+          const apiUrl = `https://rhinos.ashishsubedi.com/score/${matchId}`;
+
+          try {
+            const response = await fetch(apiUrl);
+            if (!response.ok)
+              throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+            updateScoreboard(data);
+            checkWinCondition(data);
+          } catch (error) {
+            console.error("Failed to fetch score:", error);
+            scoreboardBody.innerHTML = `<div class="error">Could not load match data. Please check the match ID and try again.</div>`;
+            statusDiv.textContent = "Failed to load";
+          }
+        }
+
+        // Updates the UI with new data
+        function updateScoreboard(data) {
+          const { firstInning, secondInning, totalOvers } = data;
+          let html = "";
+
+          // Update header with team names (only once)
+          if (firstInning && headerTeams.textContent === "Loading Match...") {
+            headerTeams.textContent = `${firstInning.battingTeam} vs ${firstInning.bowlingTeam}`;
+          }
+
+          if (firstInning) {
+            const ballsBowled = calculateBallsBowled(firstInning.over);
+            const runRate =
+              ballsBowled > 0
+                ? ((firstInning.runs / ballsBowled) * 6).toFixed(2)
+                : "0.00";
+            html += `
+                        <div class="innings">
+                            <div class="team-info">
+                                <span class="team-name">Innings 1: ${firstInning.battingTeam}</span>
+                                <span class="score">${firstInning.runs}/${firstInning.wickets}</span>
+                            </div>
+                            <div class="overs">Overs: ${firstInning.over.overNumber}.${firstInning.over.ballsBowled}</div>
+                            <div class="stats-grid">
+                                <div class="stat">
+                                    <div class="stat-label">Run Rate</div>
+                                    <div class="stat-value">${runRate}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+          }
+
+          if (secondInning && secondInning.runs !== null) {
+            const ballsBowled = calculateBallsBowled(secondInning.over);
+            const runRate =
+              ballsBowled > 0
+                ? ((secondInning.runs / ballsBowled) * 6).toFixed(2)
+                : "0.00";
+            const target = firstInning.runs + 1;
+            const runsNeeded = target - secondInning.runs;
+            const ballsRemaining = totalOvers * 6 - ballsBowled;
+            const reqRunRate =
+              ballsRemaining > 0 && runsNeeded > 0
+                ? ((runsNeeded / ballsRemaining) * 6).toFixed(2)
+                : "---";
+
+            html += `
+                        <div class="innings">
+                            <div class="team-info">
+                                <span class="team-name">Innings 2: ${
+                                  secondInning.battingTeam
+                                }</span>
+                                <span class="score">${secondInning.runs}/${
+              secondInning.wickets
+            }</span>
+                            </div>
+                            <div class="overs">Overs: ${
+                              secondInning.over.overNumber
+                            }.${secondInning.over.ballsBowled}</div>
+                            ${
+                              runsNeeded > 0 && ballsRemaining > 0
+                                ? `<div class="target-info">${secondInning.battingTeam} needs ${runsNeeded} runs in ${ballsRemaining} balls to win.</div>`
+                                : ""
+                            }
+                            <div class="stats-grid">
+                                <div class="stat">
+                                    <div class="stat-label">Target</div>
+                                    <div class="stat-value">${target}</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-label">Run Rate</div>
+                                    <div class="stat-value">${runRate}</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-label">Req. RR</div>
+                                    <div class="stat-value">${reqRunRate}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+          }
+          scoreboardBody.innerHTML = html;
+          if (!isMatchOver) {
+            statusDiv.textContent = `Total Overs: ${totalOvers}`;
+          }
+        }
+
+        // Checks for a win/loss/tie condition
+        function checkWinCondition(data) {
+          if (
+            isMatchOver ||
+            !data.firstInning ||
+            !data.secondInning ||
+            data.secondInning.runs === null
+          )
+            return;
+
+          const { firstInning, secondInning, totalOvers } = data;
+          const target = firstInning.runs + 1;
+          const runsNeeded = target - secondInning.runs;
+          const ballsBowled = calculateBallsBowled(secondInning.over);
+          const ballsRemaining = totalOvers * 6 - ballsBowled;
+
+          let finalMessage = "";
+
+          // Second team wins by scoring more runs
+          if (runsNeeded <= 0) {
+            finalMessage = `${secondInning.battingTeam} won the match!`;
+          }
+          // Innings over by balls or wickets
+          else if (ballsRemaining <= 0 || secondInning.wickets === 10) {
+            if (secondInning.runs < firstInning.runs) {
+              finalMessage = `${firstInning.battingTeam} won the match!`;
+            } else if (secondInning.runs === firstInning.runs) {
+              finalMessage = "The match is a tie!";
+            }
+          }
+
+          if (finalMessage) {
+            isMatchOver = true;
+            showWinMessage(finalMessage, finalMessage.includes("won"));
+            statusDiv.textContent = finalMessage; // Update the status div with the final result
+            clearInterval(intervalId);
+          }
+        }
+
+        // Displays the final message and triggers confetti with fireworks
+        function showWinMessage(message, triggerConfetti) {
+          winMessageText.textContent = message;
+          winOverlay.classList.add("show");
+
+          if (triggerConfetti) {
+            const duration = 5 * 1000; // 5 seconds
+            const animationEnd = Date.now() + duration;
+
+            function randomInRange(min, max) {
+              return Math.random() * (max - min) + min;
+            }
+
+            // Rain effect
+            const rainInterval = setInterval(function () {
+              const timeLeft = animationEnd - Date.now();
+              if (timeLeft <= 0) return clearInterval(rainInterval);
+
+              const particleCount = 50 * (timeLeft / duration);
+              const rainDefaults = {
+                startVelocity: 30,
+                spread: 360,
+                ticks: 60,
+                zIndex: 101,
+              };
+
+              confetti(
+                Object.assign({}, rainDefaults, {
+                  particleCount,
+                  origin: {
+                    x: randomInRange(0.1, 0.3),
+                    y: Math.random() - 0.2,
+                  },
+                })
+              );
+              confetti(
+                Object.assign({}, rainDefaults, {
+                  particleCount,
+                  origin: {
+                    x: randomInRange(0.7, 0.9),
+                    y: Math.random() - 0.2,
+                  },
+                })
+              );
+            }, 250);
+
+            // Fireworks effect
+            const fireworkInterval = setInterval(function () {
+              const timeLeft = animationEnd - Date.now();
+              if (timeLeft <= 0) return clearInterval(fireworkInterval);
+
+              const fireworkDefaults = {
+                startVelocity: 30,
+                spread: 360,
+                ticks: 60,
+                zIndex: 101,
+                particleCount: 150,
+                origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 },
+              };
+              confetti(fireworkDefaults);
+            }, 400 + Math.random() * 300);
+          }
+        }
+
+        // Initializes the scoreboard
+        function init() {
+          matchId = getMatchIdFromUrl();
+          fetchScore(); // Initial fetch
+          intervalId = setInterval(fetchScore, 5000); // Refresh every 5 seconds
+        }
+
+        init();
+      });
+    </script>
+  </body>
+</html>
