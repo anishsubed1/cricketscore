@@ -16,16 +16,16 @@
         min-height: 100vh;
         background-color: #f0f2f5;
         margin: 0;
-        padding: 1rem;
+        padding: 0;
         box-sizing: border-box;
       }
 
       .scoreboard {
         width: 100%;
-        max-width: 1400px; /* Increased width */
+        max-width: 1400px;
         background: white;
-        border-radius: 16px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         overflow: hidden;
         border: 1px solid #e0e0e0;
         position: relative;
@@ -34,23 +34,25 @@
       .header {
         background: linear-gradient(45deg, #1a73e8, #4285f4);
         color: white;
-        padding: 16px; /* Reduced padding */
+        padding: 12px;
         text-align: center;
       }
 
       .header-teams {
-        font-size: 2.5em; /* Increased font */
+        font-size: 2.2em;
         font-weight: 700;
+        line-height: 1.2;
       }
 
       .header-title {
-        font-size: 1.4em; /* Increased font */
+        font-size: 1.2em;
         font-weight: 400;
         opacity: 0.9;
+        margin-top: 4px;
       }
 
       .innings {
-        padding: 12px 16px; /* Reduced padding */
+        padding: 8px 12px;
         border-bottom: 1px solid #f0f0f0;
       }
 
@@ -61,79 +63,79 @@
       .team-info {
         display: flex;
         justify-content: space-between;
-        align-items: baseline;
-        margin-bottom: 8px;
+        align-items: center;
+        margin-bottom: 4px;
       }
 
       .team-name {
         font-weight: 700;
-        font-size: 1.8em; /* Increased font */
+        font-size: 1.4em;
         color: #333;
       }
 
       .score {
-        font-size: 3em; /* Increased font */
+        font-size: 2em;
         font-weight: 800;
         color: #1a73e8;
       }
 
       .overs {
-        font-size: 1.4em; /* Increased font */
+        font-size: 1em;
         color: #555;
-        margin-bottom: 10px;
+        margin-bottom: 4px;
       }
 
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-        gap: 12px;
-        margin-top: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 8px;
+        margin-top: 4px;
       }
 
       .stat {
         background: #f8f9fa;
-        padding: 10px;
-        border-radius: 8px;
+        padding: 8px;
+        border-radius: 6px;
         text-align: center;
       }
 
       .stat-label {
-        font-size: 1em; /* Increased font */
+        font-size: 0.85em;
         color: #666;
         text-transform: uppercase;
       }
 
       .stat-value {
-        font-size: 1.6em; /* Increased font */
+        font-size: 1.2em;
         font-weight: 600;
         color: #333;
       }
 
       .target-info {
-        margin-top: 10px; /* Reduced margin */
-        padding: 10px; /* Reduced padding */
+        margin-top: 6px;
+        padding: 8px;
         background-color: #e8f0fe;
-        border-radius: 8px;
+        border-radius: 6px;
         text-align: center;
-        font-size: 1.4em; /* Increased font */
+        font-size: 1.1em;
         font-weight: 600;
         color: #1967d2;
       }
 
       .status {
         text-align: center;
-        padding: 12px; /* Reduced padding */
+        padding: 8px;
         background-color: #f8f9fa;
         font-weight: 500;
-        font-size: 1.4em; /* Increased font */
+        font-size: 1.1em;
         color: #333;
       }
 
       .error {
         color: #d93025;
         text-align: center;
-        padding: 20px;
-        font-size: 1.4em; /* Increased font */
+        padding: 12px;
+        font-size: 1.2em;
       }
 
       .win-overlay {
@@ -162,24 +164,24 @@
       .win-message {
         position: relative;
         background: white;
-        border-radius: 12px;
+        border-radius: 10px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        padding: 16px 30px; /* Reduced padding */
+        padding: 16px 24px;
       }
 
       #win-message-text {
-        font-size: 2.6em; /* Increased font */
+        font-size: 2em;
         font-weight: 700;
         color: #1a73e8;
       }
 
       .close-button {
         position: absolute;
-        top: 10px;
-        right: 15px;
+        top: 8px;
+        right: 12px;
         background: none;
         border: none;
-        font-size: 2em;
+        font-size: 1.8em;
         line-height: 1;
         color: #aaa;
         cursor: pointer;
