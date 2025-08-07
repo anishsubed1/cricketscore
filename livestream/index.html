@@ -204,9 +204,6 @@
   </head>
   <body>
     <div class="scoreboard">
-      <div class="header">
-        <div id="header-teams" class="header-teams">Loading Match...</div>
-      </div>
       <div id="scoreboard-body" class="innings-container">
         <!-- Score data will be injected here by JavaScript -->
       </div>
@@ -286,11 +283,6 @@
           const { firstInning, secondInning, totalOvers } = data;
           let html = "";
 
-          // Update header with team names (only once)
-          if (firstInning && headerTeams.textContent === "Loading Match...") {
-            headerTeams.textContent = `${firstInning.battingTeam} vs ${firstInning.bowlingTeam}`;
-          }
-
           if (firstInning) {
             const ballsBowled = calculateBallsBowled(firstInning.over);
             const runRate =
@@ -365,7 +357,7 @@
           }
           scoreboardBody.innerHTML = html;
           if (!isMatchOver) {
-            statusDiv.textContent = `Total Overs: ${totalOvers}`;
+            statusDiv.textContent = `${secondInning.battingTeam} vs ${secondInning.bowlingTeam}      Total Overs: ${totalOvers}`;
           }
         }
 
