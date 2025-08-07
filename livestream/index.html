@@ -10,127 +10,134 @@
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: #f0f2f5;
         margin: 0;
-        padding: 0;
-        background-color: transparent;
-        overflow: hidden;
+        padding: 1rem;
+        box-sizing: border-box;
       }
 
       .scoreboard {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
         width: 100%;
+        max-width: 800px;
         background: white;
-        border-top: 2px solid #1a73e8;
-        display: flex;
-        align-items: center;
-        padding: 10px 20px;
-        box-sizing: border-box;
-        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-        z-index: 1000;
-        height: 100px;
-        overflow-x: auto;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border: 1px solid #e0e0e0;
+        position: relative;
       }
 
       .header {
-        margin-right: 20px;
-        text-align: left;
-        min-width: 200px;
+        background: linear-gradient(45deg, #1a73e8, #4285f4);
+        color: white;
+        padding: 24px;
+        text-align: center;
       }
 
       .header-teams {
-        font-size: 1.4em;
-        font-weight: 600;
-        color: #1a73e8;
+        font-size: 2em;
+        font-weight: 700;
       }
 
       .header-title {
-        font-size: 1em;
-        color: #555;
+        font-size: 1.2em;
+        font-weight: 400;
+        opacity: 0.9;
       }
 
       .innings {
-        display: flex;
-        align-items: center;
-        margin-right: 40px;
-        min-width: 280px;
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .innings:last-child {
+        border-bottom: none;
       }
 
       .team-info {
         display: flex;
-        flex-direction: column;
-        margin-right: 20px;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 10px;
       }
 
       .team-name {
-        font-weight: 600;
-        font-size: 1.1em;
+        font-weight: 700;
+        font-size: 1.5em;
         color: #333;
       }
 
       .score {
-        font-size: 1.8em;
-        font-weight: 700;
+        font-size: 2.5em;
+        font-weight: 800;
         color: #1a73e8;
       }
 
       .overs {
-        font-size: 1em;
+        font-size: 1.2em;
         color: #555;
+        margin-bottom: 12px;
       }
 
       .stats-grid {
-        display: flex;
-        gap: 10px;
-        margin-left: 10px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
       }
 
       .stat {
-        background: #f1f3f4;
-        padding: 6px 10px;
-        border-radius: 6px;
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 8px;
         text-align: center;
-        min-width: 80px;
       }
 
       .stat-label {
-        font-size: 0.7em;
+        font-size: 0.9em;
         color: #666;
         text-transform: uppercase;
       }
 
       .stat-value {
-        font-size: 1.2em;
+        font-size: 1.4em;
         font-weight: 600;
         color: #333;
       }
 
       .target-info {
-        font-size: 1em;
+        margin-top: 15px;
+        padding: 14px;
+        background-color: #e8f0fe;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 1.3em;
+        font-weight: 600;
         color: #1967d2;
-        font-weight: 500;
-        padding-left: 10px;
-        min-width: 220px;
       }
 
       .status {
-        font-size: 1em;
-        color: #333;
+        text-align: center;
+        padding: 16px;
+        background-color: #f8f9fa;
         font-weight: 500;
-        min-width: 150px;
+        font-size: 1.2em;
+        color: #333;
       }
 
       .error {
         color: #d93025;
-        font-size: 1em;
-        padding-left: 20px;
+        text-align: center;
+        padding: 20px;
+        font-size: 1.2em;
       }
 
-      /* Confetti Overlay */
       .win-overlay {
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
         right: 0;
@@ -144,21 +151,21 @@
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.5s, visibility 0.5s;
-        z-index: 2000;
+        z-index: 100;
       }
       .win-overlay.show {
         opacity: 1;
         visibility: visible;
       }
       .win-message {
+        position: relative;
         background: white;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        padding: 20px 40px;
-        position: relative;
+        padding: 24px 40px;
       }
       #win-message-text {
-        font-size: 2em;
+        font-size: 2.2em;
         font-weight: 700;
         color: #1a73e8;
       }
@@ -168,7 +175,8 @@
         right: 15px;
         background: none;
         border: none;
-        font-size: 1.5em;
+        font-size: 2em;
+        line-height: 1;
         color: #aaa;
         cursor: pointer;
       }
